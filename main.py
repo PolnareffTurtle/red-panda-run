@@ -112,6 +112,8 @@ class Game():
             self.display.blit(pygame.transform.scale(logo.img(flip=True),(132,90)),(180,130))
             logo.update()
 
+            self.musics.update()
+
             if i <360:
                 self.transition_in(i)
             i+=7
@@ -175,6 +177,8 @@ class Game():
 
             marker = Text('>', 16, (235, 84, 40), (50+70*(option_index%3), 58 + 40 * (option_index//3)))
             marker.render(self.display)
+
+            self.musics.update()
 
             if i <360:
                 self.transition_in(i)
@@ -265,6 +269,8 @@ class Game():
             self.display.blit(pygame.transform.scale(logo.img(), (132, 90)), (10, 130))
             logo.update()
 
+            self.musics.update()
+
             if i < 360:
                 self.transition_in(i)
             i += 7
@@ -289,18 +295,20 @@ class Game():
                     elif event.key == pygame.K_LEFT:
                         if y == 0:
                             self.sound_index = (self.sound_index - 1)%2
+                            self.soundon = options['sound']['vals'][self.sound_index]
 
                         elif y == 1:
                             self.res_index = (self.res_index - 1)%4
-                        self.soundon = options['sound']['vals'][self.sound_index]
-                        self.screen = pygame.display.set_mode((options['resolution']['vals'][self.res_index]))
+                            self.screen = pygame.display.set_mode((options['resolution']['vals'][self.res_index]))
+
                     elif event.key == pygame.K_RIGHT:
                         if y == 0:
                             self.sound_index = (self.sound_index + 1) % 2
+                            self.soundon = options['sound']['vals'][self.sound_index]
+
                         elif y == 1:
                             self.res_index = (self.res_index + 1) % 4
-                        self.soundon = options['sound']['vals'][self.sound_index]
-                        self.screen = pygame.display.set_mode((options['resolution']['vals'][self.res_index]))
+                            self.screen = pygame.display.set_mode((options['resolution']['vals'][self.res_index]))
 
 
             self.clock.tick(60)
@@ -385,6 +393,8 @@ class Game():
             for fact in facts:
                 fact.render(self.display)
 
+            self.musics.update()
+
             if i < 360:
                 self.transition_in(i)
             i += 7
@@ -409,7 +419,7 @@ class Game():
 
     def game_running(self):
         i=0
-        self.player.pos=[0,80]
+        self.player.pos=[0,150]
         if self.level in [1,5]:
             self.player.pos = [930,230]
         self.tilemap = Tilemap(self, self.level, tile_size=16)
@@ -438,6 +448,7 @@ class Game():
                     self.display)
                 Text('mushroom to win', 8, (235, 84, 40),(200 - self.scroll[0], 10- self.scroll[1])).render(self.display)
             elif self.level == 1:
+                Text('wall jump practice!', 8, (235, 84, 40), (600 - self.scroll[0], 250 - self.scroll[1])).render(self.display)
                 Text('This is the longest', 8, (235, 84, 40), (270 - self.scroll[0], 250 - self.scroll[1])).render(self.display)
                 Text('possible wall jump!', 8, (235, 84, 40), (270 - self.scroll[0], 260 - self.scroll[1])).render(self.display)
                 Text('Challenge!', 8, (235, 84, 40), (270 - self.scroll[0], 20 - self.scroll[1])).render(self.display)
@@ -451,6 +462,8 @@ class Game():
                 Text('than regular ones!', 8, (235, 84, 40),(200 - self.scroll[0], 50 - self.scroll[1])).render(self.display)
                 Text('no one said it would be easy ;)', 8, (235, 84, 40), (200 - self.scroll[0], 300 - self.scroll[1])).render(self.display)
             Text('[ESC]', 8, (235, 84, 40), (10,10)).render(self.display)
+
+            self.musics.update()
 
             if i <360:
                 self.transition_in(i)
