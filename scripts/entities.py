@@ -30,9 +30,11 @@ class PhysicsEntity():
         self.collisions = {'up': False, 'down': False, 'right': False, 'left': False}
         frame_movement = (movement[0]*2 + self.velocity[0], movement[1] + self.velocity[1])
 
+        rects = tilemap.physics_rects_around(self.pos)
+
         self.pos[0] += frame_movement[0]
         entity_rect = self.rect()
-        for rect in tilemap.physics_rects_around(self.pos)[0]:
+        for rect in rects['0']:
             #self.rect_render(rect)
             if entity_rect.colliderect(rect):
                 if frame_movement[0] > 0:
@@ -45,13 +47,10 @@ class PhysicsEntity():
 
         self.pos[1] += frame_movement[1]
         entity_rect = self.rect()
-        for rect in tilemap.physics_rects_around(self.pos)[2]:
-            if entity_rect.colliderect(rect):
-                self.game.lose()
-        for rect in tilemap.physics_rects_around(self.pos)[1]:
-            if entity_rect.colliderect(rect):
-                self.game.win()
-        for rect in tilemap.physics_rects_around(self.pos)[0]:
+
+        rects = tilemap.physics_rects_around(self.pos)
+
+        for rect in rects['0']:
             if entity_rect.colliderect(rect):
                 if frame_movement[1] > 0:
                     entity_rect.bottom = rect.top
@@ -61,6 +60,12 @@ class PhysicsEntity():
                     self.collisions['up'] = True
                 self.pos[1] = entity_rect.y
 
+        for rect in rects['2']:
+            if entity_rect.colliderect(rect):
+                self.game.gamestate = self.game.LOSE
+        for rect in rects['1']:
+            if entity_rect.colliderect(rect):
+                self.game.gamestate = self.game.WIN
 
         if movement[0] > 0:
             self.flip = False
@@ -117,7 +122,7 @@ class Player(PhysicsEntity):
         super().update(tilemap,movement=movement)
 
         if self.pos[1] > 300:
-            self.game.lose()
+            self.game.gamestate = self.game.LOSE
 
         self.air_time += 1
         if self.collisions['down']:

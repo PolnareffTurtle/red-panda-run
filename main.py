@@ -4,7 +4,8 @@ from random import randint
 import math
 from scripts.entities import PhysicsEntity, Backgrounds, Player
 from scripts.utils import load_image, load_images, Animation, Text, Music
-from scripts.tilemap import Tilemap
+from scripts.tilemap import Tilemaps
+import asyncio
 
 class Game():
     MAIN_MENU = 0
@@ -14,6 +15,8 @@ class Game():
     OPTIONS = 4
     TRANSITION_OUT = 5
     TRANSITION_IN = 6
+    LOSE = 7
+    WIN = 8
 
     def __init__(self):
         pygame.init()
@@ -48,36 +51,40 @@ class Game():
         self.background0 = Backgrounds(0.1,self.assets['backgrounds'][0],(0,0))
         self.background1 = Backgrounds(0.2, self.assets['backgrounds'][1], (0, 0))
 
-    def transition_out(self):
+    def transition_in(self,i):
+        pygame.draw.rect(self.display, (0, 0, 0), pygame.rect.Rect(i, 0, self.display.get_width(), self.display.get_height()))
+
+    async def transition_out(self):
         i=0
         while True:
             if i>360:
                 break
-            i+=7
+            i+=12
             pygame.draw.rect(self.display,(0,0,0),pygame.rect.Rect(0,0,i,self.display.get_height()))
 
             self.clock.tick(60)
             pygame.display.update()
             self.screen.blit(pygame.transform.scale(self.display, self.screen.get_size()), (0, 0))
-    def transition_in(self,i):
-        pygame.draw.rect(self.display, (0, 0, 0), pygame.rect.Rect(i, 0, self.display.get_width(), self.display.get_height()))
 
-    def win(self):
+            await asyncio.sleep(0)
+
+    async def win(self):
         Text(':)',24,(0, 0, 0),(self.player.pos[0]-self.render_scroll[0],self.player.pos[1]-20-self.render_scroll[1])).render(self.display)
-        self.transition_out()
+        await self.transition_out()
         if self.level == 5:
             self.gamestate = Game.MAIN_MENU
         else:
             self.level += 1
             self.gamestate = Game.GAME_MENU
 
-    def lose(self):
-        if self.player.pos[1] > 300:
-            self.player.pos[1] = 300
+    async def lose(self):
+        self.movement[0] = False
+        self.movement[1] = False
         Text('😟', 24, (235, 84, 40), (self.player.pos[0]-self.render_scroll[0], self.player.pos[1] - 20 - self.render_scroll[1])).render(self.display)
-        self.transition_out()
+        await self.transition_out()
         self.gamestate = Game.GAME_MENU
-    def main_menu(self):
+
+    async def main_menu(self):
         #self.transition_in()
         texts = {
             Text('Red Panda Run', 16, (146, 52, 22), (29, 21)),
@@ -114,9 +121,9 @@ class Game():
 
             self.musics.update()
 
-            if i <360:
+            if i <=360:
                 self.transition_in(i)
-            i+=7
+            i+=12
 
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
@@ -126,7 +133,7 @@ class Game():
                     self.musics.mnext()
                 if event.type == pygame.KEYDOWN:
                     if event.key in [pygame.K_RETURN,pygame.K_KP_ENTER]:
-                        self.transition_out()
+                        await self.transition_out()
                         self.gamestate = [Game.GAME_MENU,Game.LEVEL_SELECT,Game.OPTIONS][option_index]
                 if event.type == pygame.KEYUP:
                     if event.key == pygame.K_UP:
@@ -138,7 +145,8 @@ class Game():
             pygame.display.update()
             self.screen.blit(pygame.transform.scale(self.display,self.screen.get_size()),(0,0))
 
-    def level_select(self):
+            await asyncio.sleep(0)
+    async def level_select(self):
         texts = {
             Text('Levels', 16, (146, 52, 22), (119, 21)),
             Text('[1]', 16, (146, 52, 22), (70, 60)),
@@ -180,9 +188,9 @@ class Game():
 
             self.musics.update()
 
-            if i <360:
+            if i <=360:
                 self.transition_in(i)
-            i+=7
+            i+=12
 
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
@@ -194,10 +202,10 @@ class Game():
                     if event.key in [pygame.K_RETURN,pygame.K_KP_ENTER]:
                         self.level=option_index
                         self.gamestate = Game.GAME_MENU
-                        self.transition_out()
+                        await self.transition_out()
                     if event.key == pygame.K_ESCAPE:
                         self.gamestate = Game.MAIN_MENU
-                        self.transition_out()
+                        await self.transition_out()
 
                 if event.type == pygame.KEYUP:
                     if event.key == pygame.K_UP:
@@ -213,7 +221,9 @@ class Game():
             pygame.display.update()
             self.screen.blit(pygame.transform.scale(self.display, self.screen.get_size()), (0, 0))
 
-    def options_menu(self):
+            await asyncio.sleep(0)
+
+    async def options_menu(self):
         y=0
         texts = {
             Text('Options', 16, (255,255,255), (120, 20)),
@@ -271,9 +281,9 @@ class Game():
 
             self.musics.update()
 
-            if i < 360:
+            if i <= 360:
                 self.transition_in(i)
-            i += 7
+            i += 12
 
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
@@ -283,7 +293,7 @@ class Game():
                     self.musics.mnext()
                 if event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_ESCAPE:
-                        self.transition_out()
+                        await self.transition_out()
                         self.gamestate = Game.MAIN_MENU
                 if event.type == pygame.KEYUP:
                     if event.key == pygame.K_UP:
@@ -315,8 +325,9 @@ class Game():
             pygame.display.update()
             self.screen.blit(pygame.transform.scale(self.display, self.screen.get_size()), (0, 0))
 
+            await asyncio.sleep(0)
 
-    def game_menu(self):
+    async def game_menu(self):
         i = 0
         if self.level == 0:
             facts = {
@@ -333,10 +344,10 @@ class Game():
             facts = {
                 Text('Level '+str(self.level+1), 16, (255, 255, 255), (100, 30)),
                 Text('[ESC]', 8, (255, 255, 255), (10, 10)),
-                Text('Red pandas eat', 16, (255, 255, 255), (30, 70)),
-                Text('mushrooms, but', 16, (255, 255, 255), (30,90)),
-                Text('they like bamboo', 16, (255, 255, 255), (30, 110)),
-                Text('way more.', 16, (255, 255, 255), (30, 130)),
+                Text('Red pandas love', 16, (255, 255, 255), (30, 70)),
+                Text('bamboo, but they', 16, (255, 255, 255), (30,90)),
+                Text('they also eat', 16, (255, 255, 255), (30, 110)),
+                Text('mushrooms', 16, (255, 255, 255), (30, 130)),
                 #Text('pandas?', 16, (255, 255, 255), (30, 150)),
                 Text('Press [ENTER] to continue', 8, (255, 255, 255), (70, 200))
             }
@@ -395,9 +406,9 @@ class Game():
 
             self.musics.update()
 
-            if i < 360:
+            if i <= 360:
                 self.transition_in(i)
-            i += 7
+            i += 12
 
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
@@ -408,45 +419,55 @@ class Game():
                 if event.type == pygame.KEYDOWN:
                     if event.key in [pygame.K_RETURN,pygame.K_KP_ENTER]:
                         self.gamestate = Game.GAME_RUNNING
-                        self.transition_out()
+                        await self.transition_out()
                     if event.key == pygame.K_ESCAPE:
                         self.gamestate = Game.MAIN_MENU
-                        self.transition_out()
+                        await self.transition_out()
 
             self.clock.tick(60)
             pygame.display.update()
             self.screen.blit(pygame.transform.scale(self.display, self.screen.get_size()), (0, 0))
 
-    def game_running(self):
+            await asyncio.sleep(0)
+
+    async def game_running(self):
+
         i=0
-        self.player.pos=[0,150]
+        self.player.pos=[0,100]
         if self.level in [1,5]:
             self.player.pos = [930,230]
-        self.tilemap = Tilemap(self, self.level, tile_size=16)
-        while self.gamestate == Game.GAME_RUNNING:
 
+        self.scroll = [self.player.rect().centerx - self.display.get_width() / 2, self.player.rect().centery - self.display.get_height() / 2]
+        self.tilemaps = Tilemaps(self,self.level,tile_size=16)
+
+        self.movement[0] = False
+        self.movement[1] = False
+
+        while self.gamestate == Game.GAME_RUNNING:
             self.scroll[0] += (self.player.rect().centerx - self.display.get_width() / 2 - self.scroll[0])/10
             self.scroll[1] += (self.player.rect().centery - self.display.get_height() / 2 - self.scroll[1])/10
             if self.scroll[1] > 150:
                 self.scroll[1] = 150
             self.render_scroll = (int(self.scroll[0]),int(self.scroll[1]))
 
-
             self.background0.update(self.render_scroll)
             self.background0.render(self.display)
             self.background1.update(self.render_scroll)
             self.background1.render(self.display)
 
-            self.tilemap.render(self.display,offset=self.render_scroll)
+            self.tilemaps.render1(self.display,offset=self.render_scroll)
 
-            self.player.update(self.tilemap,(self.movement[1] - self.movement[0], 0))
+            self.player.update(self.tilemaps,(self.movement[1] - self.movement[0], 0))
             self.player.render(self.display,offset=self.render_scroll)
+
+            self.tilemaps.render2(self.display,offset=self.render_scroll)
+
 
             if self.level == 0:
                 Text('Use arrow keys to move', 8, (235, 84, 40), (-100-self.scroll[0], 100-self.scroll[1])).render(self.display)
-                Text('Eat the purple', 8, (235, 84, 40), (200 - self.scroll[0],  - self.scroll[1])).render(
+                Text('Eat the bamboo', 8, (235, 84, 40), (200 - self.scroll[0],  - self.scroll[1])).render(
                     self.display)
-                Text('mushroom to win', 8, (235, 84, 40),(200 - self.scroll[0], 10- self.scroll[1])).render(self.display)
+                Text('to win', 8, (235, 84, 40),(200 - self.scroll[0], 10- self.scroll[1])).render(self.display)
             elif self.level == 1:
                 Text('wall jump practice!', 8, (235, 84, 40), (600 - self.scroll[0], 250 - self.scroll[1])).render(self.display)
                 Text('This is the longest', 8, (235, 84, 40), (270 - self.scroll[0], 250 - self.scroll[1])).render(self.display)
@@ -465,9 +486,9 @@ class Game():
 
             self.musics.update()
 
-            if i <360:
+            if i <=360:
                 self.transition_in(i)
-            i+=7
+            i+=12
 
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
@@ -476,40 +497,48 @@ class Game():
                 if event.type == self.NEXT:
                     self.musics.mnext()
                 if event.type == pygame.KEYDOWN:
-                    if event.key == pygame.K_LEFT:
+                    if event.key in {pygame.K_LEFT,pygame.K_a}:
                         self.movement[0] = True
-                    if event.key == pygame.K_RIGHT:
+                    if event.key in {pygame.K_RIGHT,pygame.K_d}:
                         self.movement[1] = True
-                    if event.key == pygame.K_UP:
+                    if event.key in {pygame.K_UP,pygame.K_w}:
                         self.player.jump()
                     if event.key == pygame.K_ESCAPE:
                         self.gamestate = Game.MAIN_MENU
-                        self.transition_out()
-                if event.type == pygame.KEYUP:
-                    if event.key == pygame.K_LEFT:
+                        await self.transition_out()
+                elif event.type == pygame.KEYUP:
+                    if event.key in {pygame.K_LEFT,pygame.K_a}:
                         self.movement[0] = False
-                    if event.key == pygame.K_RIGHT:
+                    if event.key in {pygame.K_RIGHT,pygame.K_d}:
                         self.movement[1] = False
 
+            if self.gamestate == game.GAME_RUNNING:
+                self.clock.tick(60)
+                self.screen.blit(pygame.transform.scale(self.display,self.screen.get_size()),(0,0))
+                pygame.display.update()
 
-            self.screen.blit(pygame.transform.scale(self.display,self.screen.get_size()),(0,0))
-            pygame.display.update()
-            self.clock.tick(60)
+                await asyncio.sleep(0)
 
-    def run(self):
+            elif self.gamestate == game.LOSE:
+                await self.lose()
+            elif self.gamestate == game.WIN:
+                await self.win()
+
+
+    async def run(self):
         while True:
             if self.gamestate == Game.GAME_RUNNING:
-                self.game_running()
+                await self.game_running()
             if self.gamestate == Game.MAIN_MENU:
-                self.main_menu()
+                await self.main_menu()
             if self.gamestate == Game.LEVEL_SELECT:
-                self.level_select()
+                await self.level_select()
             if self.gamestate == Game.GAME_MENU:
-                self.game_menu()
+                await self.game_menu()
             if self.gamestate == Game.OPTIONS:
-                self.options_menu()
+                await self.options_menu()
 
 
 if __name__ == '__main__':
     game = Game()
-    game.run()
+    asyncio.run(game.run())

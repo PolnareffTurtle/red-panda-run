@@ -61,7 +61,7 @@ class Music():
             if song_name == '.DS_Store':
                 continue
             self.mlist.append('data/music/'+str(song_name))
-        self.index = randint(0,4)
+        self.index = randint(0,len(self.mlist)-1)
         self.game = game
         self.game.NEXT = pygame.USEREVENT + 1
         pygame.mixer.music.load(self.mlist[self.index])
