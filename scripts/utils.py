@@ -80,3 +80,42 @@ class Music():
             pygame.mixer.music.pause()
         else:
             pygame.mixer.music.unpause()
+
+class Background():
+    def __init__(self,speed,pos):
+        self.speed = speed
+        self.pos = list(pos)
+
+class Backgrounds():
+    def __init__(self,speed,img,pos=(0,0)):
+        self.image = img
+        self.speed = speed
+        self.left = Background(self.speed,pos)
+        self.right = Background(self.speed,(self.left.pos[0]+self.image.get_width(),0))
+        self.downleft = Background(self.speed,(self.left.pos[0],self.image.get_height()*self.speed))
+        self.downright = Background(self.speed,(self.right.pos[0],self.image.get_height()*self.speed))
+
+    def update(self,offset):
+        self.left.pos[0] += -((offset[0] * self.speed)%(self.image.get_width())) - self.left.pos[0]
+        self.right.pos[0] = self.left.pos[0] + self.image.get_width()
+        self.downleft.pos[0] = self.left.pos[0]
+        self.downright.pos[0] = self.right.pos[0]
+
+        self.left.pos[1] = -offset[1]*self.speed
+        self.right.pos[1] = -offset[1] * self.speed
+        self.downleft.pos[1] = self.left.pos[1] + self.image.get_height()//self.speed
+        self.downright.pos[1] = self.right.pos[1] + self.image.get_height() //self.speed
+
+        if self.right.pos[0] <= 0:
+            self.right.pos[0] += self.image.get_width()
+            self.downright.pos[0] += self.image.get_width()
+            self.left = self.right
+            self.downleft = self.downright
+
+
+
+    def render(self,surf):
+        surf.blit(self.image, self.left.pos)
+        surf.blit(self.image, self.right.pos)
+        surf.blit(pygame.transform.flip(self.image,0,1),self.downleft.pos)
+        surf.blit(pygame.transform.flip(self.image, 0, 1), self.downright.pos)

@@ -2,8 +2,8 @@ import pygame
 from sys import exit
 from random import randint
 import math
-from scripts.entities import PhysicsEntity, Backgrounds, Player
-from scripts.utils import load_image, load_images, Animation, Text, Music
+from scripts.entities import PhysicsEntity, Player
+from scripts.utils import load_image, load_images, Animation, Text, Music,Backgrounds
 from scripts.tilemap import Tilemaps
 import asyncio
 
@@ -50,6 +50,9 @@ class Game():
 
         self.background0 = Backgrounds(0.1,self.assets['backgrounds'][0],(0,0))
         self.background1 = Backgrounds(0.2, self.assets['backgrounds'][1], (0, 0))
+        self.background0f = Backgrounds(0.1,pygame.transform.flip(self.assets['backgrounds'][0],0,1),(0,self.assets['backgrounds'][0].get_height()))
+        self.background1f = Backgrounds(0.2, pygame.transform.flip(self.assets['backgrounds'][1], 0, 1),
+                                        (0, 272))
 
     def transition_in(self,i):
         pygame.draw.rect(self.display, (0, 0, 0), pygame.rect.Rect(i, 0, self.display.get_width(), self.display.get_height()))
@@ -434,7 +437,11 @@ class Game():
 
         i=0
         self.player.pos=[0,100]
-        if self.level in [1,5]:
+        if self.level == 1:
+            self.player.pos = [910,150]
+        elif self.level == 2:
+            self.player.pos = [33*16,49*16]
+        elif self.level == 5:
             self.player.pos = [930,230]
 
         self.scroll = [self.player.rect().centerx - self.display.get_width() / 2, self.player.rect().centery - self.display.get_height() / 2]
@@ -444,16 +451,17 @@ class Game():
         self.movement[1] = False
 
         while self.gamestate == Game.GAME_RUNNING:
+            print(self.scroll)
             self.scroll[0] += (self.player.rect().centerx - self.display.get_width() / 2 - self.scroll[0])/10
             self.scroll[1] += (self.player.rect().centery - self.display.get_height() / 2 - self.scroll[1])/10
-            if self.scroll[1] > 150:
+            if self.scroll[1] > 150 and self.level != 2:
                 self.scroll[1] = 150
             self.render_scroll = (int(self.scroll[0]),int(self.scroll[1]))
 
-            self.background0.update(self.render_scroll)
-            self.background0.render(self.display)
-            self.background1.update(self.render_scroll)
-            self.background1.render(self.display)
+
+            for background in [self.background0,self.background1]:
+                background.update(self.render_scroll)
+                background.render(self.display)
 
             self.tilemaps.render1(self.display,offset=self.render_scroll)
 
@@ -461,6 +469,8 @@ class Game():
             self.player.render(self.display,offset=self.render_scroll)
 
             self.tilemaps.render2(self.display,offset=self.render_scroll)
+
+            print(self.player.pos)
 
 
             if self.level == 0:

@@ -61,7 +61,8 @@ class PhysicsEntity():
                 self.pos[1] = entity_rect.y
 
         for rect in rects['2']:
-            if entity_rect.colliderect(rect):
+            if entity_rect.collidepoint(rect.center):
+                #print(rect.center)
                 self.game.gamestate = self.game.LOSE
         for rect in rects['1']:
             if entity_rect.colliderect(rect):
@@ -84,33 +85,7 @@ class PhysicsEntity():
     def render(self, surf,offset=(0,0)):
         surf.blit(pygame.transform.flip(self.animation.img(),self.flip,False),(self.pos[0] - offset[0] + self.anim_offset[0], self.pos[1] - offset[1] + self.anim_offset[1]))
         #pygame.draw.rect(self.game.display,(0,0,255),pygame.rect.Rect(self.pos[0]-offset[0],self.pos[1]-offset[1],self.size[0],self.size[1]),width=1)
-class Background():
-    def __init__(self,speed,pos):
-        self.speed = speed
-        self.pos = list(pos)
 
-class Backgrounds():
-    def __init__(self,speed,img,pos=(0,0)):
-        self.image = img
-        self.speed = speed
-        self.left = Background(speed,pos)
-        self.right = Background(speed,(self.left.pos[0]+self.image.get_width(),0))
-
-    def update(self,offset):
-        self.left.pos[0] += -((offset[0] * self.speed)%(self.image.get_width())) - self.left.pos[0]
-        self.right.pos[0] = self.left.pos[0] + self.image.get_width()
-
-        self.left.pos[1] = -offset[1]*self.speed
-        self.right.pos[1] = -offset[1] * self.speed
-
-        if self.right.pos[0] <= 0:
-            self.right.pos[0] += self.image.get_width()
-            self.left = self.right
-
-
-    def render(self,surf):
-        surf.blit(self.image, (self.left.pos[0], self.left.pos[1]))
-        surf.blit(self.image, (self.right.pos[0], self.right.pos[1]))
 
 class Player(PhysicsEntity):
     def __init__(self,game,pos,size):
@@ -121,7 +96,11 @@ class Player(PhysicsEntity):
     def update(self, tilemap, movement= (0,0)):
         super().update(tilemap,movement=movement)
 
-        if self.pos[1] > 300:
+        if self.game.level == 2:
+            pass
+            #if self.pos[1] > 864:
+                #self.game.gamestate = self.game.LOSE
+        elif self.pos[1] > 300:
             self.game.gamestate = self.game.LOSE
 
         self.air_time += 1
