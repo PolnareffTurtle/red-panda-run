@@ -6,28 +6,19 @@ from scripts.entities import PhysicsEntity, Player
 from scripts.utils import load_image, load_images, Animation, Text, Music,Backgrounds
 from scripts.tilemap import Tilemaps
 import asyncio
+from scripts.gamestate import GameState
 
-class Game():
-    MAIN_MENU = 0
-    LEVEL_SELECT = 1
-    GAME_MENU = 2
-    GAME_RUNNING = 3
-    OPTIONS = 4
-    TRANSITION_OUT = 5
-    TRANSITION_IN = 6
-    LOSE = 7
-    WIN = 8
-
+class Game:
     def __init__(self):
         pygame.init()
-        self.screen = pygame.display.set_mode((960,720))
+        self.screen = pygame.display.set_mode((960,720),flags=pygame.SCALED,vsync=1)
         pygame.display.set_caption('Red Panda Run')
         self.display = pygame.Surface((320,240))
         self.clock = pygame.time.Clock()
         self.movement = [False,False]
 
         self.scroll = [0,0]
-        self.gamestate = Game.MAIN_MENU
+        self.gamestate = GameState.MAIN_MENU
         self.level = 0
 
         self.sound_index, self.res_index = 0, 2
@@ -43,16 +34,16 @@ class Game():
             'player_idle': Animation(load_images('player/idle'),img_dur=20),
             'player_jump': Animation(load_images('player/jump'),img_dur=5),
             'player_run': Animation(load_images('player/run'),img_dur=5),
-            'player_wall_slide': Animation(load_images('player/wall_slide'),img_dur=5)
+            'player_wall_slide': Animation(load_images('player/wall_slide'),img_dur=5),
+            'wind_anim': Animation(load_images('wind_anim',alpha=True,scale=2),img_dur=1,loop=False)
         }
 
-        self.player = Player(self,(0,0),(22,15))
+        self.player = Player(self,(0,0),(22,10))
 
-        self.background0 = Backgrounds(0.1,self.assets['backgrounds'][0],(0,0))
-        self.background1 = Backgrounds(0.2, self.assets['backgrounds'][1], (0, 0))
-        self.background0f = Backgrounds(0.1,pygame.transform.flip(self.assets['backgrounds'][0],0,1),(0,self.assets['backgrounds'][0].get_height()))
-        self.background1f = Backgrounds(0.2, pygame.transform.flip(self.assets['backgrounds'][1], 0, 1),
-                                        (0, 272))
+    def fps_counter(self):
+        fps = str(int(self.clock.get_fps()))
+        fps_t = Text(fps,16,"white",(30,30))
+        fps_t.render(self.display)
 
     def transition_in(self,i):
         pygame.draw.rect(self.display, (0, 0, 0), pygame.rect.Rect(i, 0, self.display.get_width(), self.display.get_height()))
@@ -62,7 +53,7 @@ class Game():
         while True:
             if i>360:
                 break
-            i+=12
+            i+=36
             pygame.draw.rect(self.display,(0,0,0),pygame.rect.Rect(0,0,i,self.display.get_height()))
 
             self.clock.tick(60)
@@ -75,17 +66,17 @@ class Game():
         Text(':)',24,(0, 0, 0),(self.player.pos[0]-self.render_scroll[0],self.player.pos[1]-20-self.render_scroll[1])).render(self.display)
         await self.transition_out()
         if self.level == 5:
-            self.gamestate = Game.MAIN_MENU
+            self.gamestate = GameState.MAIN_MENU
         else:
             self.level += 1
-            self.gamestate = Game.GAME_MENU
+            self.gamestate = GameState.GAME_MENU
 
     async def lose(self):
         self.movement[0] = False
         self.movement[1] = False
         Text('😟', 24, (235, 84, 40), (self.player.pos[0]-self.render_scroll[0], self.player.pos[1] - 20 - self.render_scroll[1])).render(self.display)
         await self.transition_out()
-        self.gamestate = Game.GAME_MENU
+        self.gamestate = GameState.GAME_RUNNING
 
     async def main_menu(self):
         #self.transition_in()
@@ -94,8 +85,7 @@ class Game():
             Text('Continue', 16, (146, 52, 22), (30, 50)),
             Text('Level Select', 16, (146, 52, 22), (30, 70)),
             Text('Options', 16, (146, 52, 22), (30, 90)),
-            Text('Press [ENTER]', 8, (235, 84, 40), (80, 170)),
-            Text('to select', 8, (235, 84, 40), (110, 180))
+            Text('Use Arrow\nKeys and\nPress [ENTER]\nto select', 8, (235, 84, 40), (80, 170)),
         }
         texts2 = {
             Text('Red Panda Run', 16, (235, 84, 40), (30, 20))
@@ -103,12 +93,18 @@ class Game():
         option_index=0
         r1=randint(-100,-50)
         r2=randint(-100,0)
+
+        bg_rect = pygame.Surface((200, 20))
+        bg_rect.set_alpha(150)
+        bg_rect.fill((255, 255, 255))
+
         i=0
-        while self.gamestate == Game.MAIN_MENU:
+        while self.gamestate == GameState.MAIN_MENU:
 
 
             self.display.blit(self.assets['backgrounds'][0],(r1,0))
             self.display.blit(self.assets['backgrounds'][1],(r2,0))
+            self.display.blit(bg_rect,(28,49+option_index*20))
 
             for text in texts:
                 text.render(self.display)
@@ -117,16 +113,18 @@ class Game():
 
             marker = Text('>',16,(235, 84, 40),(10,48+20*option_index))
             marker.render(self.display)
+            option_marker = Text(['Continue','Level Select','Options'][option_index], 16, (235, 84, 40), (31, 49+20*option_index))
+            option_marker.render(self.display)
 
             logo = self.assets['player_idle']
-            self.display.blit(pygame.transform.scale(logo.img(flip=True),(132,90)),(180,130))
+            self.display.blit(pygame.transform.scale(logo.img(flip=True),(132,90)),(180,150))
             logo.update()
 
             self.musics.update()
 
             if i <=360:
                 self.transition_in(i)
-            i+=12
+            i+=36
 
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
@@ -137,7 +135,7 @@ class Game():
                 if event.type == pygame.KEYDOWN:
                     if event.key in [pygame.K_RETURN,pygame.K_KP_ENTER]:
                         await self.transition_out()
-                        self.gamestate = [Game.GAME_MENU,Game.LEVEL_SELECT,Game.OPTIONS][option_index]
+                        self.gamestate = [GameState.GAME_MENU, GameState.LEVEL_SELECT, GameState.OPTIONS][option_index]
                 if event.type == pygame.KEYUP:
                     if event.key == pygame.K_UP:
                         option_index = (option_index - 1) % 3
@@ -150,50 +148,55 @@ class Game():
 
             await asyncio.sleep(0)
     async def level_select(self):
-        texts = {
+        texts = [
             Text('Levels', 16, (146, 52, 22), (119, 21)),
-            Text('[1]', 16, (146, 52, 22), (70, 60)),
-            Text('[2]', 16, (146, 52, 22), (140, 60)),
-            Text('[3]', 16, (146, 52, 22), (210, 60)),
-            Text('[4]', 16, (146, 52, 22), (70, 100)),
-            Text('[5]', 16, (146, 52, 22), (140, 100)),
-            Text('[6]', 16, (146, 52, 22), (210, 100)),
-            Text('Press [ENTER]', 8, (235, 84, 40), (140, 170)),
-            Text('to select', 8, (235, 84, 40), (140, 180)),
-            Text('[ESC]', 8, (235, 84, 40), (10,10))
-        }
-
-        texts2 = {
             Text('Levels', 16, (235, 84, 40), (120, 20)),
-        }
+            Text('Press [ENTER]', 8, (235, 84, 40), (140, 200)),
+            Text('to select', 8, (235, 84, 40), (140, 210)),
+            Text('[ESC]', 8, (235, 84, 40), (10,10))
+        ]
+        level_texts = [
+            Text(str(i+1),
+                 16,(146, 52, 22),
+                 (50+(i%5)*50, 60+(i//5)*30))
+            for i in range(20)
+        ]
 
         option_index = 0
         r1 = randint(-100, -50)
         r2 = randint(-100, 0)
         i=0
-        while self.gamestate == Game.LEVEL_SELECT:
 
+        #bg rect
+        bg_rect = pygame.Surface((265, 130))
+        bg_rect.set_alpha(150)
+        bg_rect.fill((255, 255, 255))
+        while self.gamestate == GameState.LEVEL_SELECT:
 
             self.display.blit(self.assets['backgrounds'][0], (r1, 0))
             self.display.blit(self.assets['backgrounds'][1], (r2, 0))
 
+            self.display.blit(bg_rect,(30,50))
+
             for text in texts:
                 text.render(self.display)
-            for text in texts2:
+            for text in level_texts:
                 text.render(self.display)
 
             logo = self.assets['player_idle']
-            self.display.blit(pygame.transform.scale(logo.img(), (132, 90)), (10, 130))
+            self.display.blit(pygame.transform.scale(logo.img(), (132, 90)), (10, 150))
             logo.update()
 
-            marker = Text('>', 16, (235, 84, 40), (50+70*(option_index%3), 58 + 40 * (option_index//3)))
+            marker = Text('>', 16, (235, 84, 40), (37+50*(option_index%5), 58 + 30 * (option_index//5)))
+            level_marker = Text(str(option_index+1),16,(235, 84, 40),(51+(option_index%5)*50, 59+(option_index//5)*30))
             marker.render(self.display)
+            level_marker.render(self.display)
 
             self.musics.update()
 
             if i <=360:
                 self.transition_in(i)
-            i+=12
+            i+=36
 
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
@@ -204,21 +207,21 @@ class Game():
                 if event.type == pygame.KEYDOWN:
                     if event.key in [pygame.K_RETURN,pygame.K_KP_ENTER]:
                         self.level=option_index
-                        self.gamestate = Game.GAME_MENU
+                        self.gamestate = GameState.GAME_MENU
                         await self.transition_out()
                     if event.key == pygame.K_ESCAPE:
-                        self.gamestate = Game.MAIN_MENU
+                        self.gamestate = GameState.MAIN_MENU
                         await self.transition_out()
 
                 if event.type == pygame.KEYUP:
                     if event.key == pygame.K_UP:
-                        option_index = (option_index - 3) % 6
+                        option_index = min((option_index - 5) % 20,option_index)
                     elif event.key == pygame.K_DOWN:
-                        option_index = (option_index + 3) % 6
+                        option_index = max((option_index + 5) % 20,option_index)
                     elif event.key == pygame.K_LEFT:
-                        option_index = (option_index - 1) % 6
+                        option_index = min((option_index - 1) % 20,option_index)
                     elif event.key == pygame.K_RIGHT:
-                        option_index = (option_index + 1) % 6
+                        option_index = max((option_index + 1) % 20,option_index)
 
             self.clock.tick(60)
             pygame.display.update()
@@ -267,7 +270,7 @@ class Game():
 
 
 
-        while self.gamestate == Game.OPTIONS:
+        while self.gamestate == GameState.OPTIONS:
             self.display.fill((235, 84, 40))
 
             for text in texts:
@@ -279,14 +282,14 @@ class Game():
             marker.render(self.display)
 
             logo = self.assets['player_idle']
-            self.display.blit(pygame.transform.scale(logo.img(), (132, 90)), (10, 130))
+            self.display.blit(pygame.transform.scale(logo.img(), (132, 90)), (10, 150))
             logo.update()
 
             self.musics.update()
 
             if i <= 360:
                 self.transition_in(i)
-            i += 12
+            i += 36
 
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
@@ -297,7 +300,7 @@ class Game():
                 if event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_ESCAPE:
                         await self.transition_out()
-                        self.gamestate = Game.MAIN_MENU
+                        self.gamestate = GameState.MAIN_MENU
                 if event.type == pygame.KEYUP:
                     if event.key == pygame.K_UP:
                         y = (y - 1)%2
@@ -332,86 +335,39 @@ class Game():
 
     async def game_menu(self):
         i = 0
-        if self.level == 0:
-            facts = {
-                Text('Level '+str(self.level+1), 16, (255, 255, 255), (100, 30)),
-                Text('[ESC]', 8, (255, 255, 255), (10, 10)),
-                Text('Did you know that', 16, (255, 255, 255), (30, 70)),
-                Text('red pandas are', 16, (255, 255, 255), (30,90)),
-                Text('not closely', 16, (255, 255, 255), (30, 110)),
-                Text('related to giant', 16, (255, 255, 255), (30, 130)),
-                Text('pandas?', 16, (255, 255, 255), (30, 150)),
-                Text('Press [ENTER] to continue', 8, (255, 255, 255), (70, 200))
-            }
-        elif self.level == 1:
-            facts = {
-                Text('Level '+str(self.level+1), 16, (255, 255, 255), (100, 30)),
-                Text('[ESC]', 8, (255, 255, 255), (10, 10)),
-                Text('Red pandas love', 16, (255, 255, 255), (30, 70)),
-                Text('bamboo, but they', 16, (255, 255, 255), (30,90)),
-                Text('they also eat', 16, (255, 255, 255), (30, 110)),
-                Text('mushrooms', 16, (255, 255, 255), (30, 130)),
-                #Text('pandas?', 16, (255, 255, 255), (30, 150)),
-                Text('Press [ENTER] to continue', 8, (255, 255, 255), (70, 200))
-            }
-        elif self.level == 2:
-            facts = {
-                Text('Level '+str(self.level+1), 16, (255, 255, 255), (100, 30)),
-                Text('[ESC]', 8, (255, 255, 255), (10, 10)),
-                Text('Unfortunately,', 16, (255, 255, 255), (30, 70)),
-                Text('red pandas are', 16, (255, 255, 255), (30,90)),
-                Text('endangered in', 16, (255, 255, 255), (30, 110)),
-                Text('India, Bhutan,', 16, (255, 255, 255), (30, 130)),
-                Text('China, Nepal,', 16, (255, 255, 255), (30, 150)),
-                Text('and Myanmar.', 16, (255, 255, 255), (30, 170)),
-                Text('Press [ENTER] to continue', 8, (255, 255, 255), (70, 200))
-            }
-        elif self.level == 3:
-            facts = {
-                Text('Level ' + str(self.level + 1), 16, (255, 255, 255), (100, 30)),
-                Text('[ESC]', 8, (255, 255, 255), (10, 10)),
-                Text('They are endanger', 16, (255, 255, 255), (30, 70)),
-                Text('-ed due to habitat', 16, (255, 255, 255), (30, 90)),
-                Text('loss and degrada-', 16, (255, 255, 255), (30, 110)),
-                Text('tion, human inter-,', 16, (255, 255, 255), (30, 130)),
-                Text('ference, and', 16, (255, 255, 255), (30, 150)),
-                Text('poaching.', 16, (255, 255, 255), (30, 170)),
-                Text('Press [ENTER] to continue', 8, (255, 255, 255), (70, 200))
-            }
-        elif self.level == 4:
-            facts = {
-                Text('Level ' + str(self.level + 1), 16, (255, 255, 255), (100, 30)),
-                Text('[ESC]', 8, (255, 255, 255), (10, 10)),
-                Text('You can help red', 16, (255, 255, 255), (30, 70)),
-                Text('pandas by spread', 16, (255, 255, 255), (30, 90)),
-                Text('-ing awareness,', 16, (255, 255, 255), (30, 110)),
-                Text('donating, and go', 16, (255, 255, 255), (30, 130)),
-                Text('-ing against the', 16, (255, 255, 255), (30, 150)),
-                Text('red panda trade.', 16, (255, 255, 255), (30, 170)),
-                Text('Press [ENTER] to continue', 8, (255, 255, 255), (70, 200))
-            }
-        elif self.level == 5:
-            facts = {
-                Text('Level ' + str(self.level + 1), 16, (255, 255, 255), (100, 30)),
-                Text('[ESC]', 8, (255, 255, 255), (10, 10)),
-                Text('Red pandas are', 16, (255, 255, 255), (30, 70)),
-                Text('the cutest ani-', 16, (255, 255, 255), (30, 90)),
-                Text('mals, so it\'s', 16, (255, 255, 255), (30, 110)),
-                Text('up to us to', 16, (255, 255, 255), (30, 130)),
-                Text('protect them!', 16, (255, 255, 255), (30, 150)),
-                Text('Press [ENTER] to continue', 8, (255, 255, 255), (70, 200))
-            }
-
-        while self.gamestate == Game.GAME_MENU:
+        facts = [
+            'Did you know that\nred pandas\naren\'t closely\nrelated to giant\npandas?',
+            'Red pandas love\nbamboo!',
+            'Unfortunately,\nred pandas are\nendangered in\nseveral asian\ncountries.',
+            'They are endanger\n-ed due to habitat\nloss and degrada-\ntion, human inter-\nference, and\npoaching.',
+            'You can help red\npandas by spread\n-ing awareness,\ndonating, and go\n-ing against the\nred panda trade.',
+            'Red pandas are\nthe cutests ani-\nmals, so it\'s\nup to us to\nprotect them!',
+            'among us in\nreal life',
+            'among us in\nreal life',
+            'among us in\nreal life',
+            'among us in\nreal life',
+            'among us in\nreal life',
+            'among us in\nreal life',
+            'among us in\nreal life',
+            'among us in\nreal life',
+            'among us in\nreal life',
+            'among us in\nreal life',
+            'among us in\nreal life',
+        ]
+        while self.gamestate == GameState.GAME_MENU:
             self.display.fill((235, 84, 40))
-            for fact in facts:
-                fact.render(self.display)
-
+            for text in [
+                Text(facts[self.level], 16, (255, 255, 255), (30, 70)),
+                Text('Level ' + str(self.level + 1), 16, (255, 255, 255), (100, 30)),
+                Text('[ESC]', 8, (255, 255, 255), (10, 10)),
+                Text('Press [ENTER] to continue', 8, (255, 255, 255), (70, 200))
+            ]:
+                text.render(self.display)
             self.musics.update()
 
             if i <= 360:
                 self.transition_in(i)
-            i += 12
+            i += 36
 
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
@@ -421,10 +377,10 @@ class Game():
                     self.musics.mnext()
                 if event.type == pygame.KEYDOWN:
                     if event.key in [pygame.K_RETURN,pygame.K_KP_ENTER]:
-                        self.gamestate = Game.GAME_RUNNING
+                        self.gamestate = GameState.GAME_RUNNING
                         await self.transition_out()
                     if event.key == pygame.K_ESCAPE:
-                        self.gamestate = Game.MAIN_MENU
+                        self.gamestate = GameState.LEVEL_SELECT
                         await self.transition_out()
 
             self.clock.tick(60)
@@ -436,26 +392,26 @@ class Game():
     async def game_running(self):
 
         i=0
-        self.player.pos=[0,100]
-        if self.level == 1:
-            self.player.pos = [910,150]
-        elif self.level == 2:
-            self.player.pos = [33*16,49*16]
-        elif self.level == 5:
-            self.player.pos = [930,230]
+        start_time = pygame.time.get_ticks()
+        self.background0 = Backgrounds(0.1, self.assets['backgrounds'][0], 0,(0, 0))
+        self.background1 = Backgrounds(0.2, self.assets['backgrounds'][1], 1, (0, 0))
 
+        self.player.pos=[0,100]
+
+        self.tilemaps = Tilemaps(self, self.level, tile_size=16)
         self.scroll = [self.player.rect().centerx - self.display.get_width() / 2, self.player.rect().centery - self.display.get_height() / 2]
-        self.tilemaps = Tilemaps(self,self.level,tile_size=16)
+
 
         self.movement[0] = False
         self.movement[1] = False
 
-        while self.gamestate == Game.GAME_RUNNING:
-            print(self.scroll)
+        while self.gamestate == GameState.GAME_RUNNING:
             self.scroll[0] += (self.player.rect().centerx - self.display.get_width() / 2 - self.scroll[0])/10
             self.scroll[1] += (self.player.rect().centery - self.display.get_height() / 2 - self.scroll[1])/10
-            if self.scroll[1] > 150 and self.level != 2:
-                self.scroll[1] = 150
+            #if self.scroll[1] > 150 and self.level != 2:
+            #    self.scroll[1] = 150
+            if self.scroll[1] > 16 * (self.tilemaps.height - 10):
+                self.scroll[1] = 16 * (self.tilemaps.height - 10)
             self.render_scroll = (int(self.scroll[0]),int(self.scroll[1]))
 
 
@@ -463,42 +419,21 @@ class Game():
                 background.update(self.render_scroll)
                 background.render(self.display)
 
+            self.tilemaps.update()
             self.tilemaps.render1(self.display,offset=self.render_scroll)
 
             self.player.update(self.tilemaps,(self.movement[1] - self.movement[0], 0))
             self.player.render(self.display,offset=self.render_scroll)
-
             self.tilemaps.render2(self.display,offset=self.render_scroll)
 
-            print(self.player.pos)
-
-
-            if self.level == 0:
-                Text('Use arrow keys to move', 8, (235, 84, 40), (-100-self.scroll[0], 100-self.scroll[1])).render(self.display)
-                Text('Eat the bamboo', 8, (235, 84, 40), (200 - self.scroll[0],  - self.scroll[1])).render(
-                    self.display)
-                Text('to win', 8, (235, 84, 40),(200 - self.scroll[0], 10- self.scroll[1])).render(self.display)
-            elif self.level == 1:
-                Text('wall jump practice!', 8, (235, 84, 40), (600 - self.scroll[0], 250 - self.scroll[1])).render(self.display)
-                Text('This is the longest', 8, (235, 84, 40), (270 - self.scroll[0], 250 - self.scroll[1])).render(self.display)
-                Text('possible wall jump!', 8, (235, 84, 40), (270 - self.scroll[0], 260 - self.scroll[1])).render(self.display)
-                Text('Challenge!', 8, (235, 84, 40), (270 - self.scroll[0], 20 - self.scroll[1])).render(self.display)
-            elif self.level == 2:
-                Text('You can step', 8, (235, 84, 40), (-50 - self.scroll[0], 150 - self.scroll[1])).render(self.display)
-                Text('on these leaves', 8, (235, 84, 40), (-50 - self.scroll[0], 160 - self.scroll[1])).render(self.display)
-                Text('Wall jump!', 8, (235, 84, 40),(200 - self.scroll[0], 40- self.scroll[1])).render(self.display)
-                Text('Challenge!', 8, (235, 84, 40), (270 - self.scroll[0], 200 - self.scroll[1])).render(self.display)
-            elif self.level == 3:
-                Text('Wall jumps go farther', 8, (235, 84, 40), (200 - self.scroll[0], 40 - self.scroll[1])).render(self.display)
-                Text('than regular ones!', 8, (235, 84, 40),(200 - self.scroll[0], 50 - self.scroll[1])).render(self.display)
-                Text('no one said it would be easy ;)', 8, (235, 84, 40), (200 - self.scroll[0], 300 - self.scroll[1])).render(self.display)
             Text('[ESC]', 8, (235, 84, 40), (10,10)).render(self.display)
-
+            Text(str(((pygame.time.get_ticks()-start_time)//10)/100),8,(235, 84, 40), (270,10)).render(self.display)
             self.musics.update()
 
             if i <=360:
                 self.transition_in(i)
-            i+=12
+            i+=36
+            #self.fps_counter()
 
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
@@ -514,7 +449,7 @@ class Game():
                     if event.key in {pygame.K_UP,pygame.K_w}:
                         self.player.jump()
                     if event.key == pygame.K_ESCAPE:
-                        self.gamestate = Game.MAIN_MENU
+                        self.gamestate = GameState.MAIN_MENU
                         await self.transition_out()
                 elif event.type == pygame.KEYUP:
                     if event.key in {pygame.K_LEFT,pygame.K_a}:
@@ -522,30 +457,32 @@ class Game():
                     if event.key in {pygame.K_RIGHT,pygame.K_d}:
                         self.movement[1] = False
 
-            if self.gamestate == game.GAME_RUNNING:
+            if self.gamestate == GameState.GAME_RUNNING:
                 self.clock.tick(60)
                 self.screen.blit(pygame.transform.scale(self.display,self.screen.get_size()),(0,0))
                 pygame.display.update()
 
+
                 await asyncio.sleep(0)
 
-            elif self.gamestate == game.LOSE:
+            elif self.gamestate == GameState.LOSE:
                 await self.lose()
-            elif self.gamestate == game.WIN:
+                break
+            elif self.gamestate == GameState.WIN:
                 await self.win()
 
 
     async def run(self):
         while True:
-            if self.gamestate == Game.GAME_RUNNING:
+            if self.gamestate == GameState.GAME_RUNNING:
                 await self.game_running()
-            if self.gamestate == Game.MAIN_MENU:
+            if self.gamestate == GameState.MAIN_MENU:
                 await self.main_menu()
-            if self.gamestate == Game.LEVEL_SELECT:
+            if self.gamestate == GameState.LEVEL_SELECT:
                 await self.level_select()
-            if self.gamestate == Game.GAME_MENU:
+            if self.gamestate == GameState.GAME_MENU:
                 await self.game_menu()
-            if self.gamestate == Game.OPTIONS:
+            if self.gamestate == GameState.OPTIONS:
                 await self.options_menu()
 
 

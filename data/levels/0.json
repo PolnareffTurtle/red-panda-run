@@ -88,14 +88,24 @@
          "name":"main_layer",
          "type":"int",
          "value":1
+        }, 
+        {
+         "name":"player_x",
+         "type":"int",
+         "value":1
+        }, 
+        {
+         "name":"player_y",
+         "type":"int",
+         "value":9
         }],
  "renderorder":"right-down",
- "tiledversion":"1.10.2",
+ "tiledversion":"1.11.0",
  "tileheight":16,
  "tilesets":[
         {
          "firstgid":1,
-         "source":"..\/..\/..\/..\/Documents\/Assets.tsx"
+         "source":"..\/redpandarun.json"
         }],
  "tilewidth":16,
  "type":"map",

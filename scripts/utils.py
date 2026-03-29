@@ -4,23 +4,25 @@ from random import randint
 
 BASE_IMG_PATH = 'data/images/'
 
-def load_image(path,alpha=False):
+def load_image(path,alpha=False,scale=1):
     if alpha:
         img = pygame.image.load(BASE_IMG_PATH + path).convert_alpha()
+        img = pygame.transform.scale_by(img,scale)
         return img
     img = pygame.image.load(BASE_IMG_PATH + path).convert()
     img.set_colorkey((0,0,0))
+    img = pygame.transform.scale_by(img,scale)
     return img
 
-def load_images(path,alpha=False):
+def load_images(path,alpha=False,scale=1):
     images = []
     for img_name in sorted(os.listdir(BASE_IMG_PATH + path)):
         if img_name == '.DS_Store':
             continue
-        images.append(load_image(path + '/' + img_name, alpha))
+        images.append(load_image(path + '/' + img_name, alpha, scale))
     return images
 
-class Animation():
+class Animation:
     def __init__(self,images,img_dur,loop=True):
         self.images = images
         self.loop = loop
@@ -39,22 +41,28 @@ class Animation():
             if self.frame >= self.img_duration * len(self.images) - 1:
                 self.done = True
 
-    def img(self,flip=False):
-        return pygame.transform.flip(self.images[int(self.frame/self.img_duration)],flip,False)
+    def img(self,flip=False,direction=0):
+        frame_index = int(self.frame // self.img_duration)
+        if frame_index >= len(self.images):
+            frame_index = len(self.images) - 1
+        img = pygame.transform.flip(self.images[frame_index],flip,False)
+        img = pygame.transform.rotate(img, direction)
+        return img
 
 
-class Text():
+class Text:
     def __init__(self,text,size,color,pos):
-        self.text = text
+        self.texts = text.split('\n')
         self.color = color
         self.pos = pos
-        self.font = pygame.font.Font('data/fonts/PublicPixel.ttf',size)
-        self.image = self.font.render(text,True,color)
+        self.size = size
+        self.font = pygame.font.Font('data/fonts/PublicPixel.ttf',self.size)
+        self.images = [self.font.render(text,True,color) for text in self.texts]
 
-    def render(self,surf):
-        surf.blit(self.image,self.pos)
-
-class Music():
+    def render(self,surf,offset=(0,0)):
+        for i in range(len(self.images)):
+            surf.blit(self.images[i],(self.pos[0]-offset[0],int(self.size*i*1.2) + (self.pos[1]-offset[1])))
+class Music:
     def __init__(self,game):
         self.mlist = []
         for song_name in sorted(os.listdir('data/music')):
@@ -81,41 +89,30 @@ class Music():
         else:
             pygame.mixer.music.unpause()
 
-class Background():
+class Background:
     def __init__(self,speed,pos):
         self.speed = speed
         self.pos = list(pos)
 
-class Backgrounds():
-    def __init__(self,speed,img,pos=(0,0)):
+class Backgrounds:
+    def __init__(self,speed,img,move_speed,pos=(0,0)):
         self.image = img
         self.speed = speed
-        self.left = Background(self.speed,pos)
-        self.right = Background(self.speed,(self.left.pos[0]+self.image.get_width(),0))
-        self.downleft = Background(self.speed,(self.left.pos[0],self.image.get_height()*self.speed))
-        self.downright = Background(self.speed,(self.right.pos[0],self.image.get_height()*self.speed))
+        self.move_speed = move_speed
+        self.left = list(pos)
+        self.right = [self.left[0]+self.image.get_width(),pos[1]]
 
     def update(self,offset):
-        self.left.pos[0] += -((offset[0] * self.speed)%(self.image.get_width())) - self.left.pos[0]
-        self.right.pos[0] = self.left.pos[0] + self.image.get_width()
-        self.downleft.pos[0] = self.left.pos[0]
-        self.downright.pos[0] = self.right.pos[0]
+        self.left[0] += self.move_speed -((offset[0] * self.speed)%(self.image.get_width())) - self.left[0]
+        self.right[0] = self.left[0] + self.image.get_width()
 
-        self.left.pos[1] = -offset[1]*self.speed
-        self.right.pos[1] = -offset[1] * self.speed
-        self.downleft.pos[1] = self.left.pos[1] + self.image.get_height()//self.speed
-        self.downright.pos[1] = self.right.pos[1] + self.image.get_height() //self.speed
+        self.left[1] = -offset[1]*self.speed
+        self.right[1] = -offset[1] * self.speed
 
-        if self.right.pos[0] <= 0:
-            self.right.pos[0] += self.image.get_width()
-            self.downright.pos[0] += self.image.get_width()
+        if self.right[0] <= 0:
+            self.right[0] += self.image.get_width()
             self.left = self.right
-            self.downleft = self.downright
-
-
 
     def render(self,surf):
-        surf.blit(self.image, self.left.pos)
-        surf.blit(self.image, self.right.pos)
-        surf.blit(pygame.transform.flip(self.image,0,1),self.downleft.pos)
-        surf.blit(pygame.transform.flip(self.image, 0, 1), self.downright.pos)
+        surf.blit(self.image, self.left)
+        surf.blit(self.image, self.right)
