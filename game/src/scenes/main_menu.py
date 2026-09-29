@@ -1,8 +1,8 @@
 from scene import Scene
 import pygame
-from scripts.utils import Text
+from src.utils import Text
 from random import randint
-from scripts.gamestate import GameState
+from src.gamestate import GameState
 
 class MainMenuScene(Scene):
     def __init__(self,game):

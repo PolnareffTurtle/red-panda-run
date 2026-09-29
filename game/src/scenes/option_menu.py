@@ -1,7 +1,7 @@
 from scene import Scene
-from scripts.utils import Text
+from src.utils import Text
 import pygame
-from scripts.gamestate import GameState
+from src.gamestate import GameState
 
 class OptionMenu(Scene):
     def __init__(self, game):

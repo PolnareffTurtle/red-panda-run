@@ -3,10 +3,10 @@ import math
 
 import pygame
 
-from scripts.utils import Text
-from scripts.wind import WindZone
+from src.utils import Text
+from src.wind import WindZone
 
-with open('data/redpandarun.json') as f:
+with open('assets/redpandarun.json') as f:
     rawjson = f.read()
     jsondata = json.loads(rawjson)
 tile_types = {}
@@ -59,7 +59,7 @@ class Tilemaps:
         return self.rotated_tiles[(index, rotation)]
 
     def open_json(self, level):
-        with open('data/levels/' + str(level) + '.json') as f:
+        with open('assets/levels/' + str(level) + '.json') as f:
             rawjson = f.read()
             jsondata = json.loads(rawjson)
 

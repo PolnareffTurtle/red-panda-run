@@ -3,13 +3,13 @@
 target-version = "py312"
 line-length = 100
 
-# Code is run from game/ and imports `scripts.*`, so game/ is the import root.
+# Code is run from game/ and imports `src.*`, so game/ is the import root.
 src = ["game"]
 
 extend-exclude = [
     "game/build",
     # Unfinished refactor with broken imports; nothing uses it yet.
-    "game/scripts/scenes",
+    "game/src/scenes",
 ]
 
 [lint]
@@ -28,7 +28,7 @@ ignore = [
 ]
 
 [lint.isort]
-known-first-party = ["scripts"]
+known-first-party = ["src"]
 
 [format]
 quote-style = "preserve"

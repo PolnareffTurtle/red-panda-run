@@ -4,7 +4,7 @@ import pygame
 
 pygame.init()
 screen = pygame.display.set_mode((960, 720))
-surf = pygame.image.load('data/images/coconut.png').convert_alpha()
+surf = pygame.image.load('assets/images/coconut.png').convert_alpha()
 medium_surf = pygame.Surface((400, 400), SRCALPHA=True)
 testRect = pygame.Rect(50, 50, 1000, 1000)
 clock = pygame.time.Clock()

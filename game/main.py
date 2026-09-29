@@ -4,10 +4,10 @@ from sys import exit
 
 import pygame
 
-from scripts.entities import Player
-from scripts.gamestate import GameState
-from scripts.tilemap import Tilemaps
-from scripts.utils import (
+from src.entities import Player
+from src.gamestate import GameState
+from src.tilemap import Tilemaps
+from src.utils import (
     Animation,
     Backgrounds,
     Music,
@@ -55,7 +55,7 @@ class Game:
         self.musics = Music(self)
 
         self.assets = {
-            'all_tiles': load_tileset('data/tileset/Assets2.png', 16),
+            'all_tiles': load_tileset('assets/tileset/Assets2.png', 16),
             'backgrounds': load_images('background'),
             'player': load_image('player/idle/0.png'),
             'player_idle': Animation(load_images('player/idle'), img_dur=20),

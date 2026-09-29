@@ -3,7 +3,7 @@ from random import randint
 
 import pygame
 
-BASE_IMG_PATH = 'data/images/'
+BASE_IMG_PATH = 'assets/images/'
 
 
 def load_image(path, alpha=False, scale=1):
@@ -65,7 +65,7 @@ class Animation:
         return img
 
 
-FONT_PATH = 'data/fonts/PublicPixel.ttf'
+FONT_PATH = 'assets/fonts/PublicPixel.ttf'
 fonts = {}
 
 
@@ -97,10 +97,10 @@ class Text:
 class Music:
     def __init__(self, game):
         self.mlist = []
-        for song_name in sorted(os.listdir('data/music')):
+        for song_name in sorted(os.listdir('assets/music')):
             if song_name == '.DS_Store':
                 continue
-            self.mlist.append('data/music/' + str(song_name))
+            self.mlist.append('assets/music/' + str(song_name))
         self.index = randint(0, len(self.mlist) - 1)
         self.game = game
         self.paused = False

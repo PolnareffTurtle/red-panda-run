@@ -1,6 +1,6 @@
 import pygame
 
-from scripts.gamestate import GameState
+from src.gamestate import GameState
 
 
 class PhysicsEntity:

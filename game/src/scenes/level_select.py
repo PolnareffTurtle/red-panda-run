@@ -1,8 +1,8 @@
 from scene import Scene
-from scripts.utils import Text
+from src.utils import Text
 from random import randint
 import pygame
-from scripts.gamestate import GameState
+from src.gamestate import GameState
 
 class LevelSelectScene(Scene):
     def __init__(self, game):
