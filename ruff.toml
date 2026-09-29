@@ -1,0 +1,34 @@
+# pygbag's browser runtime is CPython 3.12, so don't allow syntax newer than that
+# even though the local .venv is 3.14.
+target-version = "py312"
+line-length = 100
+
+# Code is run from game/ and imports `scripts.*`, so game/ is the import root.
+src = ["game"]
+
+extend-exclude = [
+    "game/build",
+    # Unfinished refactor with broken imports; nothing uses it yet.
+    "game/scripts/scenes",
+]
+
+[lint]
+select = [
+    "E",    # pycodestyle errors
+    "W",    # pycodestyle warnings
+    "F",    # pyflakes
+    "I",    # isort
+    "B",    # flake8-bugbear
+    "UP",   # pyupgrade
+    "SIM",  # flake8-simplify
+    "ASYNC", # flake8-async (blocking calls inside the async frame loops)
+]
+ignore = [
+    "E501", # line length is left to the formatter
+]
+
+[lint.isort]
+known-first-party = ["scripts"]
+
+[format]
+quote-style = "preserve"
