@@ -8,8 +8,6 @@ src = ["game"]
 
 extend-exclude = [
     "game/build",
-    # Unfinished refactor with broken imports; nothing uses it yet.
-    "game/src/scenes",
 ]
 
 [lint]
