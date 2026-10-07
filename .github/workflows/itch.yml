@@ -1,0 +1,47 @@
+name: Deploy to itch.io
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "game/**"
+      - ".github/workflows/itch.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# If two pushes land close together, only the newest one is deployed.
+concurrency:
+  group: itch-deploy
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # Same pygbag version as the local install, so CI builds what `pygbag game` builds.
+      - name: Build web version
+        run: |
+          pip install pygbag==0.9.3
+          pygbag --build game
+
+      - name: Install butler
+        run: |
+          curl -L -o butler.zip https://broth.itch.zone/butler/linux-amd64/LATEST/archive/default
+          unzip butler.zip -d "$HOME/butler"
+          chmod +x "$HOME/butler/butler"
+          echo "$HOME/butler" >> "$GITHUB_PATH"
+
+      - name: Push to itch.io
+        env:
+          BUTLER_API_KEY: ${{ secrets.BUTLER_API_KEY }}
+          # itch.io target as user/game, e.g. the last two parts of https://user.itch.io/game
+          ITCH_GAME: ${{ vars.ITCH_GAME }}
+        run: butler push game/build/web "$ITCH_GAME:html5" --userversion "${GITHUB_SHA::7}"
