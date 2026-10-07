@@ -65,35 +65,6 @@ class Animation:
         return img
 
 
-FONT_PATH = 'assets/fonts/PublicPixel.ttf'
-fonts = {}
-
-
-def get_font(size):
-    # Fonts are shared per size so the glyph cache survives between frames. Building a
-    # new Font every frame makes freetype re-rasterize every character from scratch.
-    if size not in fonts:
-        fonts[size] = pygame.font.Font(FONT_PATH, size)
-    return fonts[size]
-
-
-class Text:
-    def __init__(self, text, size, color, pos):
-        self.texts = text.split('\n')
-        self.color = color
-        self.pos = pos
-        self.size = size
-        self.font = get_font(size)
-        self.images = [self.font.render(text, True, color) for text in self.texts]
-
-    def render(self, surf, offset=(0, 0)):
-        for i in range(len(self.images)):
-            surf.blit(
-                self.images[i],
-                (self.pos[0] - offset[0], int(self.size * i * 1.2) + (self.pos[1] - offset[1])),
-            )
-
-
 class Music:
     def __init__(self, game):
         self.mlist = []

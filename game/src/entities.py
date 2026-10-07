@@ -1,11 +1,9 @@
 import pygame
 
-from src.gamestate import GameState
-
 
 class PhysicsEntity:
-    def __init__(self, game, e_type, pos, size):
-        self.game = game
+    def __init__(self, scene, e_type, pos, size):
+        self.scene = scene
         self.type = e_type
         self.pos = list(pos)
 
@@ -24,7 +22,7 @@ class PhysicsEntity:
     def set_action(self, action):
         if action != self.action:
             self.action = action
-            self.animation = self.game.assets[self.type + '_' + self.action].copy()
+            self.animation = self.scene.game.assets[self.type + '_' + self.action].copy()
 
     # TODO: Rework the wind_y to be based on terminal velocity, not subtracting a fixed velocity
 
@@ -74,10 +72,10 @@ class PhysicsEntity:
         entity_rect = self.rect()
         for rect in rects['lose']:
             if entity_rect.collidepoint(rect.center):
-                self.game.gamestate = GameState.LOSE
+                self.scene.lose()
         for rect in rects['win']:
             if entity_rect.colliderect(rect):
-                self.game.gamestate = GameState.WIN
+                self.scene.win()
         for rect in rects['jump']:
             if entity_rect.collidepoint(rect.center):
                 self.velocity[1] = -8
@@ -111,16 +109,17 @@ class PhysicsEntity:
 
 
 class Player(PhysicsEntity):
-    def __init__(self, game, pos, size):
-        super().__init__(game, 'player', pos, size)
+    def __init__(self, scene, pos, size):
+        super().__init__(scene, 'player', pos, size)
         self.air_time = 0
         self.jumps = 1
+        self.wall_slide = False
 
     def update(self, tilemap, movement=(0, 0)):
         super().update(tilemap, movement=movement)
 
-        if self.pos[1] > 16 * self.game.tilemaps.height:
-            self.game.gamestate = GameState.LOSE
+        if self.pos[1] > 16 * self.scene.tilemaps.height:
+            self.scene.lose()
 
         self.air_time += 1
         if self.collisions['down']:
