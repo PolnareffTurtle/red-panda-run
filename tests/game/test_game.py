@@ -18,6 +18,8 @@ from src.tilemap import Tile
 LEVELS = range(1, 21)
 PLAYABLE = [level for level in LEVELS if level not in UNFINISHED_LEVELS]
 LAST_LEVEL = PLAYABLE[-1]
+# the next level is locked, so these return to the main menu
+END_OF_RUN = [level for level in PLAYABLE if level + 1 in UNFINISHED_LEVELS]
 
 
 def key(event_type, code):
@@ -160,7 +162,7 @@ def test_long_hitch_is_dropped(game, monkeypatch):
     assert game.tick_backlog == 0
 
 
-@pytest.mark.parametrize("level", PLAYABLE[:-1])
+@pytest.mark.parametrize("level", [level for level in PLAYABLE if level not in END_OF_RUN])
 def test_winning_moves_to_the_next_level(game, level):
     scene = gameplay(game, level)
     scene.win()
@@ -169,11 +171,12 @@ def test_winning_moves_to_the_next_level(game, level):
     assert game.next_scene is GameState.GAME_MENU
 
 
-def test_winning_the_last_level_goes_to_the_main_menu(game):
-    scene = gameplay(game, LAST_LEVEL)
+@pytest.mark.parametrize("level", END_OF_RUN)
+def test_winning_before_a_locked_level_goes_to_the_main_menu(game, level):
+    scene = gameplay(game, level)
     scene.win()
     scene.finish()
-    assert game.level == LAST_LEVEL
+    assert game.level == level
     assert game.next_scene is GameState.MAIN_MENU
 
 

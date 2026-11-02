@@ -20,8 +20,7 @@ TILE_SIZE = 16
 GID_MASK = 2**29 - 1  # the bits above this hold a tile's rotation
 
 PATHS = sorted(LEVELS.glob("*.json"))
-# Known bugs. strict xfail, so giving one of these a bamboo fails until it's removed from here.
-LEVELS_WITHOUT_BAMBOO = {"level_11.json", "level_12.json"}
+FINISHED_PATHS = [path for n, path in enumerate(PATHS, 1) if n not in UNFINISHED_LEVELS]
 
 
 def load(path):
@@ -54,9 +53,9 @@ def test_file_names_are_numbered_from_one_with_no_gaps():
 
 
 def test_every_level_slot_is_a_level_or_unfinished():
-    finished = set(range(1, len(PATHS) + 1))
-    assert not finished & UNFINISHED_LEVELS
-    assert finished | UNFINISHED_LEVELS == set(range(1, LEVEL_SLOTS + 1))
+    # an unfinished level may already have a file, it just can't be picked yet
+    levels = set(range(1, len(PATHS) + 1))
+    assert levels | UNFINISHED_LEVELS == set(range(1, LEVEL_SLOTS + 1))
 
 
 def test_tileset_matches_its_sheet():
@@ -109,22 +108,8 @@ def test_wind_pushes_exactly_one_way(level):
             assert (x_push == 0) != (y_push == 0)
 
 
-@pytest.mark.parametrize(
-    "path",
-    [
-        pytest.param(
-            path,
-            marks=pytest.mark.xfail(
-                strict=True, reason="no bamboo yet, the level can't be finished"
-            ),
-        )
-        if path.name in LEVELS_WITHOUT_BAMBOO
-        else path
-        for path in PATHS
-    ],
-    ids=lambda path: path.stem,
-)
-def test_level_can_be_won(path):
+@pytest.mark.parametrize("path", FINISHED_PATHS, ids=lambda path: path.stem)
+def test_unlocked_level_can_be_won(path):
     level = load(path)
     tiles = [gid & GID_MASK for gid in main_layer(level)["data"]]
     assert any(TILE_TYPES.get(tile - 1) == "win" for tile in tiles)
