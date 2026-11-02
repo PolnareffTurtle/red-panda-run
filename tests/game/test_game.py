@@ -8,11 +8,12 @@ import pytest
 
 from main import MAX_TICKS_PER_FRAME, SCENES
 from src.gamestate import UNFINISHED_LEVELS, GameState
+from src.scenes import level_select
 from src.scenes.game_menu import GameMenuScene
 from src.scenes.gameplay import GameplayScene
 from src.scenes.level_select import LevelSelectScene
 from src.scenes.main_menu import MainMenuScene
-from src.text import HINT, draw_text, surfaces, text_surface
+from src.text import BROWN, GREY, HINT, ORANGE, draw_text, surfaces, text_surface
 from src.tilemap import Tile
 
 LEVELS = range(1, 21)
@@ -202,6 +203,50 @@ def test_level_select_ignores_unfinished_levels(game, level):
     scene.option_index = level - 1
     press(scene, pygame.K_RETURN)
     assert game.next_scene is None
+
+
+def drawn_text(monkeypatch, game, scene):
+    texts = []
+    monkeypatch.setattr(level_select, "draw_text", lambda surf, text, *args: texts.append(text))
+    scene.render(game.display)
+    return texts
+
+
+def test_level_select_marks_locked_slots(game, monkeypatch):
+    locked = min(UNFINISHED_LEVELS)
+    scene = LevelSelectScene(game)
+    scene.option_index = locked - 1
+    texts = drawn_text(monkeypatch, game, scene)
+    assert "Coming soon" in texts
+    assert "Press [ENTER]" not in texts
+    assert not {str(level) for level in UNFINISHED_LEVELS} & set(texts)
+
+
+def test_level_select_shows_the_hint_on_playable_slots(game, monkeypatch):
+    scene = LevelSelectScene(game)
+    texts = drawn_text(monkeypatch, game, scene)
+    assert "Press [ENTER]" in texts
+    assert "Coming soon" not in texts
+
+
+def test_selected_padlock_is_raised_and_faded(game):
+    locked = min(UNFINISHED_LEVELS)
+    scene = LevelSelectScene(game)
+    scene.option_index = locked - 1
+    scene.render(game.display)
+    column, row = (locked - 1) % 5, (locked - 1) // 5
+    x, y = 50 + column * 50, 60 + row * 30
+    # orange and brown, but blended with the background behind them
+    lock = game.display.get_at((x + 10, y + 12))[:3]
+    shadow = game.display.get_at((x + 2, y + 12))[:3]
+    assert lock != ORANGE
+    assert lock[0] > lock[2]
+    assert shadow != BROWN
+    assert sum(shadow) < sum(lock)
+
+    scene.option_index = 0
+    scene.render(game.display)
+    assert game.display.get_at((x + 10, y + 12))[:3] == GREY
 
 
 @pytest.mark.parametrize(

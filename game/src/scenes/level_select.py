@@ -5,7 +5,16 @@ import pygame
 from src.gamestate import UNFINISHED_LEVELS, GameState
 from src.keys import DOWN_KEYS, ENTER_KEYS, LEFT_KEYS, RIGHT_KEYS, UP_KEYS
 from src.scenes.scene import Scene
-from src.text import HINT, MARKER, MENU, SELECTED, TITLE, draw_text
+from src.text import BROWN, GREY, HINT, MARKER, MENU, ORANGE, SELECTED, TITLE, draw_text
+
+# how see-through the selected padlock is, so it still reads as locked
+SELECTED_LOCK_ALPHA = 170
+
+
+def draw_lock(surf, pos, color):
+    x, y = pos
+    pygame.draw.rect(surf, color, (x + 5, y + 1, 10, 8), width=2)
+    pygame.draw.rect(surf, color, (x + 2, y + 7, 16, 10))
 
 
 class LevelSelectScene(Scene):
@@ -20,6 +29,13 @@ class LevelSelectScene(Scene):
         self.bg_rect.fill((255, 255, 255))
 
         self.logo = game.assets['player_idle']
+
+        # the same raised look as SELECTED text: orange over a brown shadow. Both are drawn on
+        # one surface first, so the shadow doesn't show through the orange when it's faded
+        self.selected_lock = pygame.Surface((20, 19), pygame.SRCALPHA)
+        draw_lock(self.selected_lock, (0, 1), BROWN)
+        draw_lock(self.selected_lock, (1, 0), ORANGE)
+        self.selected_lock.set_alpha(SELECTED_LOCK_ALPHA)
 
     def handle_events(self, events):
         for event in events:
@@ -51,12 +67,20 @@ class LevelSelectScene(Scene):
         surf.blit(self.bg_rect, (30, 50))
 
         draw_text(surf, 'Levels', (120, 20), TITLE)
-        draw_text(surf, 'Press [ENTER]', (140, 200), HINT)
-        draw_text(surf, 'to select', (140, 210), HINT)
+        if self.option_index + 1 in UNFINISHED_LEVELS:
+            draw_text(surf, 'Coming soon', (140, 205), HINT)
+        else:
+            draw_text(surf, 'Press [ENTER]', (140, 200), HINT)
+            draw_text(surf, 'to select', (140, 210), HINT)
         draw_text(surf, '[ESC]', (10, 10), HINT)
         for n in range(20):
             x, y = 50 + (n % 5) * 50, 60 + (n // 5) * 30
-            if n == self.option_index:
+            if n + 1 in UNFINISHED_LEVELS:
+                if n == self.option_index:
+                    surf.blit(self.selected_lock, (x, y - 1))
+                else:
+                    draw_lock(surf, (x, y), GREY)
+            elif n == self.option_index:
                 draw_text(surf, str(n + 1), (x + 1, y - 1), SELECTED)
             else:
                 draw_text(surf, str(n + 1), (x, y), MENU)

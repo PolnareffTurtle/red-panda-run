@@ -9,6 +9,7 @@ ORANGE = (235, 84, 40)
 BROWN = (146, 52, 22)
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
+GREY = (170, 140, 130)
 
 # shadow is the color of a copy drawn one pixel down-left of the text, or None
 Style = namedtuple('Style', 'size color shadow', defaults=(None,))
