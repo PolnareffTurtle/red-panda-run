@@ -1,6 +1,6 @@
 """Trains a PPO agent on one level. Run from the repo root:
 
-    python rl/train.py --level 0 --steps 1000000
+    python rl/train.py --level 1 --steps 1000000
 
 Watch it learn with `tensorboard --logdir rl/runs` (http://localhost:6006). The finished model
 is saved to rl/models/<run name>.zip, with checkpoints along the way in rl/models/<run name>/.
@@ -24,7 +24,7 @@ MODELS_DIR = RL_DIR / "models"
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--level", type=int, default=0, help="level index (0 is level 1)")
+    parser.add_argument("--level", type=int, default=1, help="level number")
     parser.add_argument("--steps", type=int, default=1_000_000, help="total env steps to train")
     parser.add_argument("--envs", type=int, default=8, help="copies of the level run in parallel")
     parser.add_argument(
@@ -33,7 +33,7 @@ def main():
     parser.add_argument("--seed", type=int, default=0)
     args = parser.parse_args()
 
-    name = args.name or f"level{args.level + 1}_{time.strftime('%m%d-%H%M%S')}"
+    name = args.name or f"level{args.level}_{time.strftime('%m%d-%H%M%S')}"
 
     # each env runs in its own process, so all CPU cores step the game at once
     env = make_vec_env(

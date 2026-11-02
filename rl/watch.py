@@ -1,7 +1,7 @@
 """Opens the game window and plays a level with a trained model, or randomly. Run from the repo root:
 
-    python rl/watch.py --level 0                              # random actions
-    python rl/watch.py --level 0 --model level1_1027-153000   # a model from rl/models/
+    python rl/watch.py --level 1                              # random actions
+    python rl/watch.py --level 1 --model level1_1027-153000   # a model from rl/models/
 
 --model takes a run name from rl/models/, or a path to a .zip relative to the repo root.
 Close the window or press Ctrl+C to stop.
@@ -26,7 +26,7 @@ def find_model(name):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--level", type=int, default=0, help="level index (0 is level 1)")
+    parser.add_argument("--level", type=int, default=1, help="level number")
     parser.add_argument("--model", help="trained model to watch; random actions if left out")
     parser.add_argument(
         "--stochastic",

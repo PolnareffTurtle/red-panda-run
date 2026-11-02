@@ -47,7 +47,7 @@ class RedPandaRunEnv(gym.Env):
     # "human" opens the game window and draws every step at the game's real speed
     metadata = {"render_modes": ["human"], "render_fps": 60}
 
-    def __init__(self, level=0, render_mode=None):
+    def __init__(self, level=1, render_mode=None):
         assert render_mode is None or render_mode in self.metadata["render_modes"], render_mode
         self.render_mode = render_mode
         # SDL reads the driver when Game() calls pygame.init(), so this is early enough.

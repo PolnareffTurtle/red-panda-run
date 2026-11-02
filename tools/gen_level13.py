@@ -1,6 +1,6 @@
-"""Generates game/assets/levels/12.json (level 13).
+"""Generates game/assets/levels/level_13.json.
 
-Run from the repo root: python tools/gen_level12.py [output path]
+Run from the repo root: python tools/gen_level13.py [output path]
 Rows passed to the helpers (rect, put, ground, ...) are shifted down by DY tiles.
 """
 
@@ -655,7 +655,7 @@ level = {
     'width': W,
 }
 
-default_path = Path(__file__).resolve().parent.parent / 'game/assets/levels/12.json'
+default_path = Path(__file__).resolve().parent.parent / 'game/assets/levels/level_13.json'
 out_path = sys.argv[1] if len(sys.argv) > 1 else default_path
 with open(out_path, 'w') as f:
     json.dump(level, f)

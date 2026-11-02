@@ -1,6 +1,6 @@
 """Plays random actions in the env and summarises what happened. Run from the repo root:
 
-    python rl/random_agent.py --level 0 --episodes 200
+    python rl/random_agent.py --level 1 --episodes 200
 
 Use it as a sanity check after every env change, and to see whether a reward function ranks
 outcomes the way you expect (wins above timeouts above deaths).
@@ -17,7 +17,7 @@ from env import RedPandaRunEnv
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--level", type=int, default=0, help="level index (0 is level 1)")
+    parser.add_argument("--level", type=int, default=1, help="level number")
     parser.add_argument("--episodes", type=int, default=100)
     parser.add_argument(
         "--hold",
@@ -56,7 +56,7 @@ def main():
         steps += length
 
     elapsed = time.perf_counter() - start
-    print(f"level {args.level + 1}, {args.episodes} episodes, {steps / elapsed:,.0f} steps/s\n")
+    print(f"level {args.level}, {args.episodes} episodes, {steps / elapsed:,.0f} steps/s\n")
     print(f"{'outcome':<8} {'count':>6} {'length':>8} {'return mean':>12} {'min':>9} {'max':>9}")
     for outcome in ("win", "lose", "timeout"):
         if outcome not in returns:

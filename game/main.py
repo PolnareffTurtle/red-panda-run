@@ -42,7 +42,7 @@ class Game:
         self.display = pygame.Surface((320, 240))
         self.clock = pygame.time.Clock()
 
-        self.level = 0
+        self.level = 1
 
         self.sound_index, self.res_index = 0, 0
         self.soundon = True
