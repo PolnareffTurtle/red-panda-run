@@ -1,0 +1,48 @@
+name: Deploy to itch.io
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  ruff:
+    uses: ./.github/workflows/ruff.yml
+
+  tests:
+    uses: ./.github/workflows/tests.yml
+
+  web:
+    uses: ./.github/workflows/web.yml
+
+  deploy:
+    needs: [ruff, tests, web]
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    # If two pushes land close together, only the newest one is deployed.
+    concurrency:
+      group: itch-deploy
+      cancel-in-progress: true
+    steps:
+      # the exact build the browser test ran against
+      - uses: actions/download-artifact@v4
+        with:
+          name: web-build
+          path: web-build
+
+      - name: Install butler
+        run: |
+          curl -L -o butler.zip https://broth.itch.zone/butler/linux-amd64/LATEST/archive/default
+          unzip butler.zip -d "$HOME/butler"
+          chmod +x "$HOME/butler/butler"
+          echo "$HOME/butler" >> "$GITHUB_PATH"
+
+      - name: Push to itch.io
+        env:
+          BUTLER_API_KEY: ${{ secrets.BUTLER_API_KEY }}
+          # itch.io target as user/game, e.g. the last two parts of https://user.itch.io/game
+          ITCH_GAME: ${{ vars.ITCH_GAME }}
+        run: butler push web-build "$ITCH_GAME:html5" --userversion "${GITHUB_SHA::7}"

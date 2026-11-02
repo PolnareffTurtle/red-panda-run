@@ -29,7 +29,7 @@ pytest tests/rl                    # the RL env and a short PPO run
 pygbag --build game && pytest tests/web_build   # the real build, in Chromium (`playwright install chromium`)
 ```
 
-`.github/workflows/ci.yml` runs ruff and all of these on every push to `dev` and `main`. A push to `main` then deploys to itch.io, once `ruff`, `tests` and `web` have passed; the `rl` job doesn't block it. The folder isn't called `tests/build` because `.gitignore` ignores `build/`.
+All of these and ruff run on every push to `dev` and `main`, each in its own file in `.github/workflows/`: `ruff.yml`, `tests.yml`, `web.yml` and `rl.yml`. On `main`, `itch.yml` calls the first three and deploys the build from `web.yml` once they pass; `rl.yml` runs on its own and doesn't block it. The folder isn't called `tests/build` because `.gitignore` ignores `build/`.
 
 The rules in **pygbag constraints** below are enforced by `tests/web/test_web_rules.py`. A new import in `game/` has to be added to `ALLOWED_IMPORTS` there, after checking that it works in the browser. Levels with no bamboo are listed in `LEVELS_WITHOUT_BAMBOO` in `tests/levels/test_level_data.py`.
 
