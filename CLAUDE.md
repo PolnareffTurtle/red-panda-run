@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Overview
 
-Red Panda Run is a small pygame-ce 2D platformer that also ships to the browser with pygbag. All game code and assets live under `game/`. The repo root only holds `.venv/`, `.gitignore`, and `ruff.toml`.
+Red Panda Run is a small pygame-ce 2D platformer that also ships to the browser with pygbag. All game code and assets live under `game/`. Besides config (`.venv/`, `.gitignore`, `ruff.toml`, `requirements.txt`), the repo root holds `tools/` (level generation scripts) and `rl/` (reinforcement learning code that drives the game headless; kept out of `game/` so pygbag doesn't bundle it).
 
 ## Commands
 
@@ -20,7 +20,9 @@ pygbag --build game                # build only
 
 Lint/format with ruff (installed in `.venv`, config in `ruff.toml`), from the repo root: `ruff check` and `ruff format`.
 
-There are no tests or requirements file. `game/src/test.py` is a throwaway pygame scratch script, not a test suite.
+Dependencies are in `requirements.txt` at the repo root (`pip install -r requirements.txt` into `.venv`): pygame-ce for the game, plus gymnasium, stable-baselines3 and tensorboard for the RL work in `rl/`. The game itself only needs pygame-ce.
+
+There are no tests.
 
 ## Architecture
 
