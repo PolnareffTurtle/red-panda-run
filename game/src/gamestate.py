@@ -11,4 +11,4 @@ class GameState(Enum):
     OPTIONS = 4
 
 
-UNFINISHED_LEVELS = {11, 12, 14, 15, 16, 17, 18, 19, 20}
+UNFINISHED_LEVELS = {11, 12, 13, 14, 15, 16, 17, 18, 19, 20}
