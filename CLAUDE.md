@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Overview
 
-Red Panda Run is a small pygame-ce 2D platformer that also ships to the browser with pygbag. All game code and assets live under `game/`. The repo root only holds `.venv/`, `.gitignore`, and `ruff.toml`.
+Red Panda Run is a small pygame-ce 2D platformer that also ships to the browser with pygbag. All game code and assets live under `game/`. Besides config (`.venv/`, `.gitignore`, `ruff.toml`, `requirements.txt`), the repo root holds `tools/` (level generation scripts) and `rl/` (reinforcement learning code that drives the game headless; kept out of `game/` so pygbag doesn't bundle it).
 
 ## Commands
 
@@ -18,9 +18,20 @@ pygbag game                        # serves on localhost:8000, output goes to ga
 pygbag --build game                # build only
 ```
 
-Lint/format with ruff (installed in `.venv`, config in `ruff.toml`), from the repo root: `ruff check` and `ruff format`.
+Lint/format with ruff (installed in `.venv`, config in `ruff.toml`), from the repo root: `ruff check` and `ruff format`. CI only checks, it doesn't fix anything.
 
-There are no tests or requirements file. `game/src/test.py` is a throwaway pygame scratch script, not a test suite.
+Dependencies are in `requirements.txt` at the repo root (`pip install -r requirements.txt` into `.venv`): pygame-ce for the game, plus gymnasium, stable-baselines3 and tensorboard for the RL work in `rl/`. The game itself only needs pygame-ce.
+
+```bash
+# From the repo root. Tests live in tests/, outside game/, so pygbag doesn't bundle them.
+pytest                             # tests/web, tests/levels, tests/game: needs only pygame-ce and pytest
+pytest tests/rl                    # the RL env and a short PPO run
+pygbag --build game && pytest tests/web_build   # the real build, in Chromium (`playwright install chromium`)
+```
+
+All of these and ruff run on every push to `dev` and `main`, each in its own file in `.github/workflows/`: `ruff.yml`, `tests.yml`, `web.yml` and `rl.yml`. On `main`, `itch.yml` calls the first three and deploys the build from `web.yml` once they pass; `rl.yml` runs on its own and doesn't block it. The folder isn't called `tests/build` because `.gitignore` ignores `build/`.
+
+The rules in **pygbag constraints** below are enforced by `tests/web/test_web_rules.py`. A new import in `game/` has to be added to `ALLOWED_IMPORTS` there, after checking that it works in the browser. Every level not in `UNFINISHED_LEVELS` must have a bamboo tile, or the level tests fail.
 
 ## Architecture
 
@@ -37,13 +48,13 @@ A scene leaves by calling `self.game.change_scene(GameState.X)`. The loop finish
 
 **Rendering.** Everything is drawn to a 320x240 `self.display` surface, and `present()` blits it to the `SCALED` window, scaling only if the options menu changed the window size. Text is drawn with `draw_text(surf, text, pos, style)` from `src/text.py`, called straight from the frame loop. It keeps every rendered string in a dict keyed by text, size, color and wrap width, so nothing is re-rendered unless the string changes; pass `cache=False` for text that changes nearly every frame (the level timer). Colors and the `Style(size, color, shadow)` presets (`TITLE`, `MENU`, `SELECTED`, `HINT`, ...) live there too, and `width=` word-wraps to a pixel width.
 
-**Levels are Tiled exports** (`assets/levels/<n>.json`, loaded by `src/tilemap.py`):
+**Levels are Tiled exports** (`assets/levels/level_<nn>.json`, e.g. `level_01.json`, loaded by `src/tilemap.py`):
 - The tileset `assets/redpandarun.json` maps tile id → `type` (`physics`, `win`, `lose`, `jump`). Tile images are cut from the 16px tileset sheet `assets/tileset/Assets2.png` by `load_tileset`, row by row, so a tile's position in the sheet gives its Tiled tile id (GID − 1).
 - The map's custom properties are read **by position**: `[0]` `main_layer`, `[1]` `player_x`, `[2]` `player_y` (in tiles). Wind objects read `[0]` `x_push`, `[1]` `y_push`. Tiled sorts properties alphabetically, so keep these names.
 - The top 3 bits of a GID encode rotation. They are decoded in `open_json`, and rotated surfaces are cached in `tile_image`.
 - Only `main_layer` is used for collision (`physics_rects_around` checks a 4x3 neighborhood). Tile layers up to and including `main_layer` draw behind the player (`render1`). Text/wind objects and later layers draw in front (`render2`).
 - Object layers are told apart by their Tiled `class`: `text` (in-world text, stored as `(text, pos, Style)` rows and drawn with `draw_text`) or `wind` (`WindZone` in `src/wind.py`, which pushes the player and spawns particles; exactly one of `x_push`/`y_push` must be non-zero).
 
-**Level progression** is hard-coded. The level select shows 20 slots, but only levels whose index isn't in `UNFINISHED_LEVELS` (`src/gamestate.py`) can be picked. `GameMenuScene` shows `assets/text/facts.json[level]` (one plain sentence per level, wrapped to `FACT_WIDTH`; a level past the end of the list shows no fact), and `GameplayScene.finish()` returns to the main menu after level index 5. Update these together when adding levels.
+**Level progression** is hard-coded. `game.level` is the level's number, starting at 1, the same number as its filename and the one shown on screen. The level select shows 20 slots, but only levels whose number isn't in `UNFINISHED_LEVELS` (`src/gamestate.py`) can be picked. `GameMenuScene` shows `assets/text/facts.json[level - 1]` (one plain sentence per level, wrapped to `FACT_WIDTH`; a level past the end of the list shows no fact), and `GameplayScene.finish()` moves on to the next level, or returns to the main menu when the next one is in `UNFINISHED_LEVELS`. Update these together when adding levels.
 
 **Assets.** `load_image` converts non-alpha images with black `(0,0,0)` as the colorkey. `load_images` loads a whole directory in sorted order (skipping `.DS_Store`), so frame and tile order comes from the filenames.

@@ -22,8 +22,8 @@ class GameMenuScene(Scene):
     def render(self, surf):
         level, facts = self.game.level, self.game.facts
         surf.fill(ORANGE)
-        if level < len(facts):
-            draw_text(surf, facts[level], (8, 70), WHITE_BIG, width=FACT_WIDTH)
-        draw_text(surf, 'Level ' + str(level + 1), (100, 30), WHITE_BIG)
+        if level <= len(facts):
+            draw_text(surf, facts[level - 1], (8, 70), WHITE_BIG, width=FACT_WIDTH)
+        draw_text(surf, 'Level ' + str(level), (100, 30), WHITE_BIG)
         draw_text(surf, '[ESC]', (10, 10), WHITE_SMALL)
         draw_text(surf, 'Press [ENTER] to continue', (70, 200), WHITE_SMALL)

@@ -24,8 +24,9 @@ class LevelSelectScene(Scene):
     def handle_events(self, events):
         for event in events:
             if event.type == pygame.KEYDOWN:
-                if event.key in ENTER_KEYS and self.option_index not in UNFINISHED_LEVELS:
-                    self.game.level = self.option_index
+                # option_index is a position in the grid, levels are numbered from 1
+                if event.key in ENTER_KEYS and self.option_index + 1 not in UNFINISHED_LEVELS:
+                    self.game.level = self.option_index + 1
                     self.game.change_scene(GameState.GAME_MENU)
                 if event.key == pygame.K_ESCAPE:
                     self.game.change_scene(GameState.MAIN_MENU)

@@ -130,7 +130,7 @@ class Tilemaps:
                 self.group_alpha[group] = target if abs(target - alpha) < 1 else alpha
 
     def open_json(self, level):
-        with open('assets/levels/' + str(level) + '.json') as f:
+        with open(f'assets/levels/level_{level:02}.json') as f:
             rawjson = f.read()
             jsondata = json.loads(rawjson)
 

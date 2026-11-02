@@ -7,3 +7,7 @@ build/
 .vscode/
 
 .ruff_cache/
+
+# RL training output
+rl/runs/
+rl/models/

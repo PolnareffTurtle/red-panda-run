@@ -1,0 +1,33 @@
+name: Ruff
+
+# On main this runs through itch.yml, which needs it to pass before deploying.
+on:
+  push:
+    branches: [dev]
+  workflow_call:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  ruff:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # Same ruff version as the local install, so CI agrees with `ruff check` and `ruff format`.
+      - name: Install ruff
+        run: pip install ruff==0.16.9
+
+      - name: Lint
+        run: ruff check --output-format=github
+
+      # Runs even if the lint fails, so one push reports both.
+      - name: Check formatting
+        if: success() || failure()
+        run: ruff format --check

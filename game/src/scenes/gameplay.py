@@ -43,7 +43,7 @@ class GameplayScene(Scene):
         if self.result == 'lose':
             # a new GameplayScene reloads the level
             game.change_scene(GameState.GAME_RUNNING)
-        elif game.level == 5 or game.level + 1 in UNFINISHED_LEVELS:
+        elif game.level + 1 in UNFINISHED_LEVELS:
             game.change_scene(GameState.MAIN_MENU)
         else:
             game.level += 1

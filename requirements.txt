@@ -1,0 +1,12 @@
+# The game itself
+pygame-ce==2.5.7
+
+# RL training (rl/). stable-baselines3 pulls in torch and numpy.
+gymnasium==1.4.0
+stable-baselines3==2.9.0
+tensorboard==2.21.0
+
+# Dev
+ruff
+pytest==9.2.0
+playwright==1.64.1
