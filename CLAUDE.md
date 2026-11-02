@@ -18,11 +18,20 @@ pygbag game                        # serves on localhost:8000, output goes to ga
 pygbag --build game                # build only
 ```
 
-Lint/format with ruff (installed in `.venv`, config in `ruff.toml`), from the repo root: `ruff check` and `ruff format`. `.github/workflows/ruff.yml` runs both on every push to `dev`, and only checks, it doesn't fix anything.
+Lint/format with ruff (installed in `.venv`, config in `ruff.toml`), from the repo root: `ruff check` and `ruff format`. CI only checks, it doesn't fix anything.
 
 Dependencies are in `requirements.txt` at the repo root (`pip install -r requirements.txt` into `.venv`): pygame-ce for the game, plus gymnasium, stable-baselines3 and tensorboard for the RL work in `rl/`. The game itself only needs pygame-ce.
 
-There are no tests.
+```bash
+# From the repo root. Tests live in tests/, outside game/, so pygbag doesn't bundle them.
+pytest                             # tests/web, tests/levels, tests/game: needs only pygame-ce and pytest
+pytest tests/rl                    # the RL env and a short PPO run
+pygbag --build game && pytest tests/web_build   # the real build, in Chromium (`playwright install chromium`)
+```
+
+`.github/workflows/ci.yml` runs ruff and all of these on every push to `dev` and `main`. A push to `main` then deploys to itch.io, once `ruff`, `tests` and `web` have passed; the `rl` job doesn't block it. The folder isn't called `tests/build` because `.gitignore` ignores `build/`.
+
+The rules in **pygbag constraints** below are enforced by `tests/web/test_web_rules.py`. A new import in `game/` has to be added to `ALLOWED_IMPORTS` there, after checking that it works in the browser. Levels with no bamboo are listed in `LEVELS_WITHOUT_BAMBOO` in `tests/levels/test_level_data.py`.
 
 ## Architecture
 

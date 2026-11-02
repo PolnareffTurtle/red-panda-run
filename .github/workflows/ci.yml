@@ -1,0 +1,123 @@
+name: CI
+
+on:
+  push:
+    branches: [dev, main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  ruff:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # Same ruff version as the local install, so CI agrees with `ruff check` and `ruff format`.
+      - name: Install ruff
+        run: pip install ruff==0.16.9
+
+      - name: Lint
+        run: ruff check --output-format=github
+
+      # Runs even if the lint fails, so one push reports both.
+      - name: Check formatting
+        if: success() || failure()
+        run: ruff format --check
+
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # 3.12 is what pygbag runs in the browser. Linux also catches file name case mistakes
+      # that macOS lets through.
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install pygame-ce==2.5.7 pytest==9.2.0
+
+      - name: Run tests
+        run: pytest
+
+  web:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # Same pygbag version as the local install, so CI builds what `pygbag game` builds.
+      - name: Install dependencies
+        run: |
+          pip install pygbag==0.9.3 pygame-ce==2.5.7 pytest==9.2.0 playwright==1.64.1
+          playwright install --with-deps chromium
+
+      - name: Build web version
+        run: pygbag --build game
+
+      - name: Test the build in a browser
+        run: pytest tests/web_build
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: web-build
+          path: game/build/web
+          if-no-files-found: error
+
+  # Not a requirement of deploy: RL code never ships, so it can't break the game.
+  rl:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # The CPU build of torch is a fraction of the size of the default one.
+      - name: Install dependencies
+        run: |
+          pip install torch --index-url https://download.pytorch.org/whl/cpu
+          pip install -r requirements.txt
+
+      - name: Run tests
+        run: pytest tests/rl
+
+  deploy:
+    needs: [ruff, tests, web]
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    # If two pushes land close together, only the newest one is deployed.
+    concurrency:
+      group: itch-deploy
+      cancel-in-progress: true
+    steps:
+      # the exact build the browser test ran against
+      - uses: actions/download-artifact@v4
+        with:
+          name: web-build
+          path: web-build
+
+      - name: Install butler
+        run: |
+          curl -L -o butler.zip https://broth.itch.zone/butler/linux-amd64/LATEST/archive/default
+          unzip butler.zip -d "$HOME/butler"
+          chmod +x "$HOME/butler/butler"
+          echo "$HOME/butler" >> "$GITHUB_PATH"
+
+      - name: Push to itch.io
+        env:
+          BUTLER_API_KEY: ${{ secrets.BUTLER_API_KEY }}
+          # itch.io target as user/game, e.g. the last two parts of https://user.itch.io/game
+          ITCH_GAME: ${{ vars.ITCH_GAME }}
+        run: butler push web-build "$ITCH_GAME:html5" --userversion "${GITHUB_SHA::7}"
