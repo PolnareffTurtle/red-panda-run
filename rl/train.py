@@ -21,6 +21,29 @@ RL_DIR = Path(__file__).resolve().parent
 RUNS_DIR = RL_DIR / "runs"
 MODELS_DIR = RL_DIR / "models"
 
+GAMMA = 0.99  # discount: how much a reward one step later is worth
+
+
+def make_model(env, seed):
+    return PPO(
+        "MlpPolicy",
+        env,
+        # SB3's defaults apart from ent_coef, written out so they're easy to find and change
+        n_steps=2048,  # steps each env plays before every update
+        batch_size=64,
+        n_epochs=10,  # passes over the collected steps per update
+        gamma=GAMMA,
+        learning_rate=3e-4,
+        # bonus for staying random. At 0 the first run settled on standing still (it's never
+        # punished) before it had found the bamboo once
+        ent_coef=0.01,
+        tensorboard_log=str(RUNS_DIR),
+        seed=seed,
+        # small MLPs train faster on the CPU than on the GPU
+        device="cpu",
+        verbose=1,
+    )
+
 
 def main():
     parser = argparse.ArgumentParser()
@@ -44,24 +67,7 @@ def main():
         vec_env_cls=SubprocVecEnv,
     )
 
-    model = PPO(
-        "MlpPolicy",
-        env,
-        # SB3's defaults apart from ent_coef, written out so they're easy to find and change
-        n_steps=2048,  # steps each env plays before every update
-        batch_size=64,
-        n_epochs=10,  # passes over the collected steps per update
-        gamma=0.99,  # discount: how much a reward one step later is worth
-        learning_rate=3e-4,
-        # bonus for staying random. At 0 the first run settled on standing still (it's never
-        # punished) before it had found the bamboo once
-        ent_coef=0.01,
-        tensorboard_log=str(RUNS_DIR),
-        seed=args.seed,
-        # small MLPs train faster on the CPU than on the GPU
-        device="cpu",
-        verbose=1,
-    )
+    model = make_model(env, args.seed)
 
     checkpoints = CheckpointCallback(
         # save_freq counts calls per env, so divide to get one save per 100k total steps
