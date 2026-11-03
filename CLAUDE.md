@@ -57,4 +57,6 @@ A scene leaves by calling `self.game.change_scene(GameState.X)`. The loop finish
 
 **Level progression** is hard-coded. `game.level` is the level's number, starting at 1, the same number as its filename and the one shown on screen. The level select shows 20 slots, but only levels whose number isn't in `UNFINISHED_LEVELS` (`src/gamestate.py`) can be picked. `GameMenuScene` shows `assets/text/facts.json[level - 1]` (one plain sentence per level, wrapped to `FACT_WIDTH`; a level past the end of the list shows no fact), and `GameplayScene.finish()` moves on to the next level, or returns to the main menu when the next one is in `UNFINISHED_LEVELS`. Update these together when adding levels.
 
+**High scores.** `GameplayScene` counts ticks and `finish()` passes a win to `Game.record_win`, which keeps the best per level in `best_ticks`. They're saved to `high_scores.json` in the repo root only when `Game` is given a `scores_file`, which `main.py` does on desktop. The RL env and tests pass none, so they can't overwrite the player's scores, and the browser build keeps them until the page closes.
+
 **Assets.** `load_image` converts non-alpha images with black `(0,0,0)` as the colorkey. `load_images` loads a whole directory in sorted order (skipping `.DS_Store`), so frame and tile order comes from the filenames.

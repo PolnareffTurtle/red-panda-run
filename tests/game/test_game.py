@@ -1,12 +1,13 @@
 """Runs the real game headless: scenes, levels, the async frame loop and its timing."""
 
 import asyncio
+import json
 from pathlib import Path
 
 import pygame
 import pytest
 
-from main import MAX_TICKS_PER_FRAME, SCENES
+from main import MAX_TICKS_PER_FRAME, SCENES, Game
 from src.gamestate import UNFINISHED_LEVELS, GameState
 from src.scenes import level_select
 from src.scenes.game_menu import GameMenuScene
@@ -375,3 +376,50 @@ def test_text_wraps_to_width(game):
     wrapped = text_surface("a few words here", 8, (0, 0, 0), width=50)
     assert wrapped.get_width() <= 50
     assert wrapped.get_height() > one_line.get_height()
+
+
+@pytest.fixture
+def scores(game, monkeypatch, tmp_path):
+    path = tmp_path / "high_scores.json"
+    monkeypatch.setattr(game, "scores_file", path)
+    monkeypatch.setattr(game, "best_ticks", {})
+    return path
+
+
+def test_winning_saves_the_ticks_it_took(game, scores):
+    scene = gameplay(game, 2)
+    for _ in range(7):
+        scene.update()
+    scene.win()
+    scene.finish()
+    assert json.loads(scores.read_text()) == {"2": 7}
+
+
+def test_only_a_faster_win_replaces_the_best(game, scores):
+    game.record_win(1, 300)
+    game.record_win(1, 400)
+    assert game.best_ticks == {1: 300}
+    game.record_win(1, 288)
+    assert game.best_ticks == {1: 288}
+
+
+def test_losing_saves_nothing(game, scores):
+    scene = gameplay(game)
+    scene.lose()
+    scene.finish()
+    assert game.best_ticks == {}
+    assert not scores.exists()
+
+
+def test_scores_load_back_with_number_keys(game, scores):
+    game.record_win(2, 288)
+    assert Game(scores).best_ticks == {2: 288}
+
+
+def test_no_scores_file_only_keeps_them_in_memory(game, monkeypatch, tmp_path):
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(game, "scores_file", None)
+    monkeypatch.setattr(game, "best_ticks", {})
+    game.record_win(1, 100)
+    assert game.best_ticks == {1: 100}
+    assert list(tmp_path.iterdir()) == []

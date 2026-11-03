@@ -11,3 +11,6 @@ build/
 # RL training output
 rl/runs/
 rl/models/
+
+# the player's best ticks per level
+high_scores.json

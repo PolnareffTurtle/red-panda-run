@@ -31,6 +31,8 @@ class GameplayScene(Scene):
 
         # 'win' or 'lose' once the level is over. Set by the player through win() and lose()
         self.result = None
+        # the same 60/s ticks the RL env counts, so a run can be compared with an agent's
+        self.ticks = 0
 
     def win(self):
         self.result = 'win'
@@ -40,6 +42,8 @@ class GameplayScene(Scene):
 
     def finish(self):
         game = self.game
+        if self.result == 'win':
+            game.record_win(game.level, self.ticks)
         if self.result == 'lose':
             # a new GameplayScene reloads the level
             game.change_scene(GameState.GAME_RUNNING)
@@ -67,6 +71,7 @@ class GameplayScene(Scene):
                     self.movement[1] = False
 
     def update(self):
+        self.ticks += 1
         display = self.game.display
         self.scroll[0] += (
             self.player.rect().centerx - display.get_width() / 2 - self.scroll[0]
@@ -97,6 +102,9 @@ class GameplayScene(Scene):
         # the timer shows a new value nearly every frame, so it is not worth caching
         seconds = ((pygame.time.get_ticks() - self.start_time) // 10) / 100
         draw_text(surf, str(seconds), (270, 10), HINT, cache=False)
+        best = self.game.best_ticks.get(self.game.level)
+        if best is not None:
+            draw_text(surf, f'best {best}', (270, 22), HINT)
         draw_text(surf, str(int(self.game.clock.get_fps())), (30, 30), WHITE_BIG)
 
         if self.result:

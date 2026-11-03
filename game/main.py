@@ -1,6 +1,7 @@
 import asyncio
 import json
-from sys import exit
+import os
+from sys import exit, platform
 
 import pygame
 
@@ -30,10 +31,13 @@ SCENES = {
 TICK_RATE = 60
 # A hitch longer than this many ticks (level load, switching tabs) is dropped, not replayed.
 MAX_TICKS_PER_FRAME = 4
+# best ticks per level. Outside game/ so pygbag doesn't bundle it. The browser build has no disk
+# that lasts, so there the scores only live until the page closes.
+SCORES_FILE = None if platform == 'emscripten' else '../high_scores.json'
 
 
 class Game:
-    def __init__(self):
+    def __init__(self, scores_file=None):
         pygame.init()
         # SCALED lets SDL do the single upscale to the window/canvas. Rendering into a
         # 960x720 screen surface as well meant scaling the frame twice every frame.
@@ -66,6 +70,13 @@ class Game:
         # one fact per level, shown on the card before the level starts
         with open('assets/text/facts.json', encoding='utf-8') as f:
             self.facts = json.load(f)
+
+        # None keeps scores in memory, so RL agents and tests can't overwrite the player's
+        self.scores_file = scores_file
+        self.best_ticks = {}
+        if scores_file and os.path.exists(scores_file):
+            with open(scores_file, encoding='utf-8') as f:
+                self.best_ticks = {int(level): ticks for level, ticks in json.load(f).items()}
 
         self.last_frame_time = pygame.time.get_ticks()
         self.tick_backlog = 0
@@ -119,6 +130,14 @@ class Game:
 
             ticks = await self.next_frame()
 
+    def record_win(self, level, ticks):
+        if level in self.best_ticks and self.best_ticks[level] <= ticks:
+            return
+        self.best_ticks[level] = ticks
+        if self.scores_file:
+            with open(self.scores_file, 'w', encoding='utf-8') as f:
+                json.dump(self.best_ticks, f, indent=2, sort_keys=True)
+
     def change_scene(self, state):
         # takes effect at the end of the frame, after the wipe out has played
         self.next_scene = state
@@ -159,5 +178,5 @@ class Game:
 
 
 if __name__ == '__main__':
-    game = Game()
+    game = Game(SCORES_FILE)
     asyncio.run(game.run())
